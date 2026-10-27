@@ -113,10 +113,16 @@ export class PaymentPageComponent implements OnInit {
     // Save to server
     this.http.post(`${API_BASE_URL}booking`, payload).subscribe({
       next: (res: any) => {
+        if (!res || !res._id) {
+          this.paymentProcessing = false;
+          this.paymentSuccess = false;
+          this.errorMessage = 'Booking confirmation failed: Server did not return a valid persistent booking confirmation.';
+          return;
+        }
         this.paymentProcessing = false;
         this.paymentSuccess = true;
         this.errorMessage = '';
-        this.confirmedBookingId = res?._id || 'TB-' + Date.now();
+        this.confirmedBookingId = String(res._id);
         this.saveToLocalTrips(payload, this.confirmedBookingId);
       },
       error: (err: any) => {

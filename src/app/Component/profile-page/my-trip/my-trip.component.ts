@@ -41,17 +41,10 @@ export class MyTripComponent implements OnInit {
         } else {
           this.trips = localTrips;
         }
-
-        if (this.trips.length === 0) {
-          this.addDefaultDemoTrip();
-        }
       },
       error: () => {
         this.loading = false;
         this.trips = localTrips;
-        if (this.trips.length === 0) {
-          this.addDefaultDemoTrip();
-        }
       }
     });
   }
