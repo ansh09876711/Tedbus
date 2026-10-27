@@ -1,0 +1,181 @@
+<div class="payment-container max-w-5xl mx-auto py-8 px-4">
+    <!-- Success Modal -->
+    <div *ngIf="paymentSuccess" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div class="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-3xl shadow-2xl p-8 max-w-md w-full text-center animate-fade-in text-gray-800 dark:text-gray-100">
+            <div class="w-16 h-16 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm">
+                <mat-icon style="font-size: 36px; height: 36px; width: 36px;">check_circle</mat-icon>
+            </div>
+            <h2 class="text-2xl font-black text-gray-900 dark:text-white mb-2">{{ 'payment.successTitle' | translate }}</h2>
+            <p class="text-gray-600 dark:text-gray-300 text-sm mb-4">{{ 'payment.successDesc' | translate }}</p>
+            <div class="bg-gray-50 dark:bg-slate-800/60 border border-gray-200 dark:border-slate-700 rounded-2xl p-4 text-left mb-6 text-sm space-y-1.5">
+                <p><strong>{{ 'payment.bookingId' | translate }}:</strong> <span class="text-red-600 dark:text-red-400 font-mono font-bold">{{confirmedBookingId}}</span></p>
+                <p><strong>Route:</strong> {{bookingData?.route?.departureLocation?.name}} &rarr; {{bookingData?.route?.arrivalLocation?.name}}</p>
+                <p><strong>Seats:</strong> {{bookingData?.seats?.join(', ')}}</p>
+                <p><strong>Total Paid:</strong> <span class="font-bold text-emerald-600 dark:text-emerald-400">₹{{bookingData?.totalAmount}}</span></p>
+            </div>
+            <button (click)="goToTrips()" class="w-full py-3 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white font-bold rounded-xl shadow-lg transition-all cursor-pointer">
+                {{ 'payment.viewTrips' | translate }}
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Payment Flow -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Payment Options (2 columns) -->
+        <div class="md:col-span-2 bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-gray-200 dark:border-slate-800 p-6 md:p-8">
+            <h2 class="text-xl font-black text-gray-900 dark:text-white mb-6 flex items-center gap-2.5">
+                <div class="w-9 h-9 rounded-xl bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 flex items-center justify-center">
+                    <mat-icon style="font-size: 20px; width: 20px; height: 20px;">payment</mat-icon>
+                </div>
+                <span>{{ 'payment.title' | translate }}</span>
+            </h2>
+
+            <div class="payment-methods grid grid-cols-3 gap-3 mb-6">
+                <button type="button" (click)="selectMethod('card')"
+                    [ngClass]="selectedPaymentMethod === 'card' ? 'border-red-600 bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 font-bold shadow-sm' : 'border-gray-200 dark:border-slate-700 hover:border-red-300 text-gray-700 dark:text-gray-300'"
+                    class="p-4 border-2 rounded-2xl text-center transition-all cursor-pointer flex flex-col items-center justify-center">
+                    <mat-icon class="block mb-1.5" style="font-size: 22px; width: 22px; height: 22px;">credit_card</mat-icon>
+                    <span class="text-xs font-semibold">{{ 'payment.card' | translate }}</span>
+                </button>
+                <button type="button" (click)="selectMethod('upi')"
+                    [ngClass]="selectedPaymentMethod === 'upi' ? 'border-red-600 bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 font-bold shadow-sm' : 'border-gray-200 dark:border-slate-700 hover:border-red-300 text-gray-700 dark:text-gray-300'"
+                    class="p-4 border-2 rounded-2xl text-center transition-all cursor-pointer flex flex-col items-center justify-center">
+                    <mat-icon class="block mb-1.5" style="font-size: 22px; width: 22px; height: 22px;">qr_code_2</mat-icon>
+                    <span class="text-xs font-semibold">{{ 'payment.upi' | translate }}</span>
+                </button>
+                <button type="button" (click)="selectMethod('netbanking')"
+                    [ngClass]="selectedPaymentMethod === 'netbanking' ? 'border-red-600 bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 font-bold shadow-sm' : 'border-gray-200 dark:border-slate-700 hover:border-red-300 text-gray-700 dark:text-gray-300'"
+                    class="p-4 border-2 rounded-2xl text-center transition-all cursor-pointer flex flex-col items-center justify-center">
+                    <mat-icon class="block mb-1.5" style="font-size: 22px; width: 22px; height: 22px;">account_balance</mat-icon>
+                    <span class="text-xs font-semibold">{{ 'payment.netbanking' | translate }}</span>
+                </button>
+            </div>
+
+            <!-- Card Form -->
+            <div *ngIf="selectedPaymentMethod === 'card'" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">{{ 'payment.cardNumber' | translate }}</label>
+                    <input type="text" [(ngModel)]="cardNumber" placeholder="4532 •••• •••• 8923"
+                        maxlength="19" class="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:border-red-500 bg-gray-50 dark:bg-slate-800 text-gray-900 dark:text-white transition-all">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">{{ 'payment.cardHolder' | translate }}</label>
+                    <input type="text" [(ngModel)]="cardHolder" placeholder="Name as displayed on card"
+                        class="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:border-red-500 bg-gray-50 dark:bg-slate-800 text-gray-900 dark:text-white transition-all">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">{{ 'payment.expiry' | translate }}</label>
+                        <input type="text" [(ngModel)]="expiryDate" placeholder="MM/YY" maxlength="5"
+                            class="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:border-red-500 bg-gray-50 dark:bg-slate-800 text-gray-900 dark:text-white transition-all">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">{{ 'payment.cvv' | translate }}</label>
+                        <input type="password" [(ngModel)]="cvv" placeholder="123" maxlength="4"
+                            class="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:border-red-500 bg-gray-50 dark:bg-slate-800 text-gray-900 dark:text-white transition-all">
+                    </div>
+                </div>
+            </div>
+
+            <!-- UPI Form -->
+            <div *ngIf="selectedPaymentMethod === 'upi'" class="space-y-4 text-center py-4">
+                <div class="w-40 h-40 bg-gray-50 dark:bg-slate-800 border-2 border-dashed border-gray-300 dark:border-slate-700 rounded-2xl mx-auto flex items-center justify-center shadow-inner">
+                    <div class="text-center">
+                        <mat-icon class="text-gray-400 dark:text-gray-500" style="font-size: 52px; width: 52px; height: 52px;">qr_code_scanner</mat-icon>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 font-semibold">{{ 'payment.scanToPay' | translate }}</p>
+                    </div>
+                </div>
+                <div class="max-w-xs mx-auto">
+                    <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5 text-left">{{ 'payment.upiId' | translate }}</label>
+                    <input type="text" [(ngModel)]="upiId" placeholder="username@okhdfcbank"
+                        class="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:border-red-500 bg-gray-50 dark:bg-slate-800 text-gray-900 dark:text-white transition-all">
+                </div>
+            </div>
+
+            <!-- Netbanking Form -->
+            <div *ngIf="selectedPaymentMethod === 'netbanking'" class="space-y-4">
+                <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">{{ 'payment.selectBank' | translate }}</label>
+                <div class="grid grid-cols-2 gap-3">
+                    <label *ngFor="let bank of ['HDFC Bank', 'State Bank of India', 'ICICI Bank', 'Axis Bank', 'Kotak Mahindra']"
+                        class="flex items-center gap-2.5 p-3.5 border border-gray-200 dark:border-slate-700 rounded-xl cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-800 transition-all">
+                        <input type="radio" name="bank" [(ngModel)]="selectedBank" [value]="bank" class="text-red-600 focus:ring-red-500">
+                        <span class="text-xs font-semibold text-gray-800 dark:text-gray-200">{{bank}}</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Persistence / Payment Error Message -->
+            <div *ngIf="errorMessage" class="mt-4 p-4 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/60 rounded-2xl flex items-start gap-3 text-red-700 dark:text-red-300 animate-fade-in">
+                <mat-icon class="text-red-600 shrink-0" style="font-size: 20px; width: 20px; height: 20px;">error_outline</mat-icon>
+                <div class="text-xs">
+                    <p class="font-bold text-sm mb-0.5">Booking Reservation Failed</p>
+                    <p class="leading-relaxed">{{ errorMessage }}</p>
+                </div>
+            </div>
+
+            <!-- Pay Button -->
+            <button (click)="processPayment()" [disabled]="paymentProcessing"
+                class="w-full mt-6 py-3.5 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 disabled:opacity-50 text-white font-extrabold rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer">
+                <span *ngIf="paymentProcessing" class="flex items-center gap-2">
+                    <div class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    {{ 'payment.processing' | translate }}
+                </span>
+                <span *ngIf="!paymentProcessing">{{ 'payment.paySecurely' | translate }} (₹{{bookingData?.totalAmount}})</span>
+            </button>
+        </div>
+
+        <!-- Trip Summary (1 column) -->
+        <div class="bg-white dark:bg-slate-900 rounded-3xl border border-gray-200 dark:border-slate-800 p-6 h-fit shadow-sm text-gray-800 dark:text-gray-100">
+            <h3 class="text-sm font-black text-gray-900 dark:text-white uppercase tracking-wider border-b border-gray-100 dark:border-slate-800 pb-3 mb-4 flex items-center gap-2">
+                <mat-icon class="text-red-600" style="font-size: 18px; width: 18px; height: 18px;">receipt_long</mat-icon>
+                <span>Trip Summary</span>
+            </h3>
+            <div class="space-y-3.5 text-sm">
+                <div>
+                    <span class="text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider block">Operator</span>
+                    <strong class="text-gray-900 dark:text-white text-base">{{bookingData?.operatorName}}</strong>
+                </div>
+                <div class="flex justify-between items-center py-3 border-y border-gray-100 dark:border-slate-800">
+                    <div>
+                        <div class="text-[10px] uppercase font-bold text-gray-400">Departure</div>
+                        <div class="font-extrabold text-sm text-gray-900 dark:text-white">{{bookingData?.route?.departureLocation?.name}}</div>
+                        <div class="text-xs text-gray-500">{{bookingData?.departureTime}}:00 hrs</div>
+                    </div>
+                    <mat-icon class="text-red-500" style="font-size: 20px; width: 20px; height: 20px;">arrow_forward</mat-icon>
+                    <div class="text-right">
+                        <div class="text-[10px] uppercase font-bold text-gray-400">Arrival</div>
+                        <div class="font-extrabold text-sm text-gray-900 dark:text-white">{{bookingData?.route?.arrivalLocation?.name}}</div>
+                        <div class="text-xs text-gray-500">{{bookingData?.arrivalTime}}:00 hrs</div>
+                    </div>
+                </div>
+                <div>
+                    <span class="text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider block">Selected Seats</span>
+                    <strong class="text-red-600 dark:text-red-400">{{bookingData?.seats?.join(', ')}} ({{bookingData?.seats?.length}} Seats)</strong>
+                </div>
+                <div>
+                    <span class="text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider block">Passengers</span>
+                    <ul class="text-xs space-y-1.5 mt-1.5">
+                        <li *ngFor="let p of bookingData?.passengers" class="p-2 bg-gray-50 dark:bg-slate-800/60 rounded-lg flex items-center justify-between">
+                            <span class="font-medium text-gray-800 dark:text-gray-200">{{p.name}} ({{p.gender}}, {{p.age}}y)</span>
+                            <span class="font-bold text-red-600 dark:text-red-400">Seat {{p.seatNumber}}</span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="border-t border-gray-100 dark:border-slate-800 pt-3 mt-3">
+                    <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-1.5">
+                        <span>Base Fare</span>
+                        <span class="font-semibold text-gray-800 dark:text-gray-200">₹{{bookingData?.totalAmount}}</span>
+                    </div>
+                    <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-1.5">
+                        <span>Convenience Fee</span>
+                        <span class="text-emerald-600 dark:text-emerald-400 font-bold">FREE</span>
+                    </div>
+                    <div class="flex justify-between font-black text-base text-gray-900 dark:text-white border-t border-gray-100 dark:border-slate-800 pt-2.5 mt-2">
+                        <span>Total Payable</span>
+                        <span class="text-red-600 dark:text-red-400">₹{{bookingData?.totalAmount}}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

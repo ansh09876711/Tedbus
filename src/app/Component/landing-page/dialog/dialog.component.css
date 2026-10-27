@@ -1,0 +1,19 @@
+table {
+  width: 100%;
+}
+
+th.mat-header-cell {
+  background-color: #f8fafc;
+  color: #334155;
+  font-size: 13px;
+  letter-spacing: 0.025em;
+}
+
+td.mat-cell {
+  font-size: 13px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+tr.mat-row:hover {
+  background-color: #fef2f2;
+}

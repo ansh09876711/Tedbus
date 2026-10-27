@@ -1,1 +1,153 @@
-/* You can add global styles to this file, and also import other style files */
+/* Global styles */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-app: #f8fafc;
+  --bg-card: #ffffff;
+  --bg-card-subtle: #f1f5f9;
+  --text-main: #0f172a;
+  --text-muted: #64748b;
+  --text-inverted: #ffffff;
+  --border-subtle: #e2e8f0;
+  --border-strong: #cbd5e1;
+  --brand-red: #dc2626;
+  --brand-red-hover: #b91c1c;
+  --nav-bg: #ffffff;
+  --nav-border: #f1f5f9;
+  --shadow-color: rgba(0, 0, 0, 0.06);
+}
+
+html.dark, body.dark {
+  --bg-app: #0b1120;
+  --bg-card: #151e32;
+  --bg-card-subtle: #1e293b;
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --text-inverted: #0f172a;
+  --border-subtle: #243049;
+  --border-strong: #334155;
+  --brand-red: #ef4444;
+  --brand-red-hover: #dc2626;
+  --nav-bg: #0f172a;
+  --nav-border: #1e293b;
+  --shadow-color: rgba(0, 0, 0, 0.5);
+}
+
+html, body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: Roboto, "Helvetica Neue", sans-serif;
+  background-color: var(--bg-app);
+  color: var(--text-main);
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+/* Universal Dark Mode Component Styling */
+html.dark nav,
+html.dark .nav-bar,
+html.dark header {
+  background-color: var(--nav-bg) !important;
+  border-color: var(--nav-border) !important;
+}
+
+html.dark .bg-white {
+  background-color: var(--bg-card) !important;
+}
+
+html.dark .bg-gray-50, 
+html.dark .bg-slate-50 {
+  background-color: var(--bg-card-subtle) !important;
+}
+
+html.dark .bg-gray-100, 
+html.dark .bg-slate-100 {
+  background-color: #1e293b !important;
+}
+
+html.dark .text-gray-900, 
+html.dark .text-gray-800, 
+html.dark .text-slate-900 {
+  color: #f8fafc !important;
+}
+
+html.dark .text-gray-700, 
+html.dark .text-gray-600, 
+html.dark .text-slate-700, 
+html.dark .text-slate-600 {
+  color: #cbd5e1 !important;
+}
+
+html.dark .text-gray-500, 
+html.dark .text-gray-400, 
+html.dark .text-slate-500, 
+html.dark .text-slate-400 {
+  color: #94a3b8 !important;
+}
+
+html.dark .border,
+html.dark .border-gray-100, 
+html.dark .border-gray-200, 
+html.dark .border-gray-300,
+html.dark .border-slate-200 {
+  border-color: var(--border-subtle) !important;
+}
+
+html.dark .shadow, 
+html.dark .shadow-sm,
+html.dark .shadow-md, 
+html.dark .shadow-lg, 
+html.dark .shadow-xl {
+  box-shadow: 0 4px 20px -2px var(--shadow-color) !important;
+}
+
+html.dark input, 
+html.dark select, 
+html.dark textarea {
+  background-color: var(--bg-card-subtle) !important;
+  color: #f8fafc !important;
+  border-color: var(--border-subtle) !important;
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+  color: #64748b !important;
+}
+
+html.dark .mat-mdc-menu-panel {
+  background-color: var(--bg-card) !important;
+  color: var(--text-main) !important;
+  border: 1px solid var(--border-subtle);
+}
+
+html.dark .mat-mdc-menu-item {
+  color: var(--text-main) !important;
+}
+
+html.dark .mat-mdc-menu-item:hover {
+  background-color: var(--bg-card-subtle) !important;
+}
+
+html.dark .mat-mdc-dialog-container .mdc-dialog__surface {
+  background-color: var(--bg-card) !important;
+  color: var(--text-main) !important;
+}
+
+::-webkit-scrollbar {
+  background: transparent;
+  width: 6px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+html.dark ::-webkit-scrollbar-thumb {
+  background: #334155;
+}
+

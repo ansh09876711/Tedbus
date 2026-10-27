@@ -1,0 +1,283 @@
+<div class="filter-panel bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl shadow-sm p-4 text-gray-800 dark:text-gray-100">
+  <!-- Filters Header -->
+  <div class="flex items-center justify-between pb-3 border-b border-gray-200 dark:border-slate-800 mb-4">
+    <div class="flex items-center gap-2">
+      <mat-icon class="text-red-600 dark:text-red-400">tune</mat-icon>
+      <span class="font-bold text-base uppercase tracking-wider">{{ 'buses.filters' | translate }}</span>
+      <span *ngIf="activeFilterCount > 0" class="bg-red-600 text-white text-xs font-semibold px-2 py-0.5 rounded-full">
+        {{ activeFilterCount }}
+      </span>
+    </div>
+    <button *ngIf="activeFilterCount > 0" (click)="resetAll()" 
+            class="text-xs font-semibold text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 transition-colors flex items-center gap-1 cursor-pointer bg-red-50 dark:bg-red-950/40 px-2 py-1 rounded-lg">
+      <mat-icon style="font-size: 14px; width: 14px; height: 14px;">restart_alt</mat-icon>
+      <span>{{ 'buses.clearAll' | translate }}</span>
+    </button>
+  </div>
+
+  <!-- 1. Price Range Dropdown -->
+  <div class="filter-section mb-4 pb-3 border-b border-gray-100 dark:border-slate-800">
+    <div class="section-header flex items-center justify-between cursor-pointer py-1" (click)="toggleSection('price')">
+      <div class="flex items-center gap-2">
+        <mat-icon class="text-emerald-600 dark:text-emerald-400" style="font-size: 20px; width: 20px; height: 20px;">payments</mat-icon>
+        <span class="text-sm font-semibold">{{ 'buses.priceRange' | translate }}</span>
+      </div>
+      <mat-icon class="transition-transform duration-200 text-gray-400 text-sm" [class.rotate-180]="openSections['price']">
+        expand_more
+      </mat-icon>
+    </div>
+    <div *ngIf="openSections['price']" class="mt-2.5">
+      <select [value]="filterState.priceRange || 'all'" (change)="onPriceChange($event)"
+              class="w-full bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-800 dark:text-gray-200 text-xs rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-red-500 focus:outline-none transition-all cursor-pointer">
+        <option value="all">{{ 'buses.allPrices' | translate }}</option>
+        <option value="under500">{{ 'buses.under500' | translate }}</option>
+        <option value="500to1000">{{ 'buses.price500to1000' | translate }}</option>
+        <option value="above1000">{{ 'buses.above1000' | translate }}</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- 2. Boarding Point Dropdown -->
+  <div *ngIf="boardingPoints.length > 0" class="filter-section mb-4 pb-3 border-b border-gray-100 dark:border-slate-800">
+    <div class="section-header flex items-center justify-between cursor-pointer py-1" (click)="toggleSection('boarding')">
+      <div class="flex items-center gap-2">
+        <mat-icon class="text-blue-600 dark:text-blue-400" style="font-size: 20px; width: 20px; height: 20px;">trip_origin</mat-icon>
+        <span class="text-sm font-semibold">{{ 'buses.boardingPoint' | translate }}</span>
+      </div>
+      <mat-icon class="transition-transform duration-200 text-gray-400 text-sm" [class.rotate-180]="openSections['boarding']">
+        expand_more
+      </mat-icon>
+    </div>
+    <div *ngIf="openSections['boarding']" class="mt-2.5">
+      <select [value]="filterState.selectedBoarding || ''" (change)="onBoardingChange($event)"
+              class="w-full bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-800 dark:text-gray-200 text-xs rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-red-500 focus:outline-none transition-all cursor-pointer">
+        <option value="">{{ 'buses.allBoardingPoints' | translate }}</option>
+        <option *ngFor="let point of boardingPoints" [value]="point">{{ point }}</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- 3. Dropping Point Dropdown -->
+  <div *ngIf="droppingPoints.length > 0" class="filter-section mb-4 pb-3 border-b border-gray-100 dark:border-slate-800">
+    <div class="section-header flex items-center justify-between cursor-pointer py-1" (click)="toggleSection('dropping')">
+      <div class="flex items-center gap-2">
+        <mat-icon class="text-red-500 dark:text-red-400" style="font-size: 20px; width: 20px; height: 20px;">location_on</mat-icon>
+        <span class="text-sm font-semibold">{{ 'buses.droppingPoint' | translate }}</span>
+      </div>
+      <mat-icon class="transition-transform duration-200 text-gray-400 text-sm" [class.rotate-180]="openSections['dropping']">
+        expand_more
+      </mat-icon>
+    </div>
+    <div *ngIf="openSections['dropping']" class="mt-2.5">
+      <select [value]="filterState.selectedDropping || ''" (change)="onDroppingChange($event)"
+              class="w-full bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-800 dark:text-gray-200 text-xs rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-red-500 focus:outline-none transition-all cursor-pointer">
+        <option value="">{{ 'buses.allDroppingPoints' | translate }}</option>
+        <option *ngFor="let point of droppingPoints" [value]="point">{{ point }}</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- 4. Bus Operator Dropdown -->
+  <div *ngIf="operators.length > 0" class="filter-section mb-4 pb-3 border-b border-gray-100 dark:border-slate-800">
+    <div class="section-header flex items-center justify-between cursor-pointer py-1" (click)="toggleSection('operators')">
+      <div class="flex items-center gap-2">
+        <mat-icon class="text-purple-600 dark:text-purple-400" style="font-size: 20px; width: 20px; height: 20px;">directions_bus</mat-icon>
+        <span class="text-sm font-semibold">{{ 'buses.operator' | translate }}</span>
+      </div>
+      <mat-icon class="transition-transform duration-200 text-gray-400 text-sm" [class.rotate-180]="openSections['operators']">
+        expand_more
+      </mat-icon>
+    </div>
+    <div *ngIf="openSections['operators']" class="mt-2.5">
+      <select [value]="filterState.selectedOperator || ''" (change)="onOperatorChange($event)"
+              class="w-full bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-800 dark:text-gray-200 text-xs rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-red-500 focus:outline-none transition-all cursor-pointer">
+        <option value="">{{ 'buses.allOperators' | translate }}</option>
+        <option *ngFor="let op of operators" [value]="op">{{ op }}</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- 5. Bus Types (Collapsible Dropdown Accordion) -->
+  <div class="filter-section mb-4 pb-3 border-b border-gray-100 dark:border-slate-800">
+    <div class="section-header flex items-center justify-between cursor-pointer py-1" (click)="toggleSection('busType')">
+      <div class="flex items-center gap-2">
+        <mat-icon class="text-indigo-600 dark:text-indigo-400" style="font-size: 20px; width: 20px; height: 20px;">airline_seat_recline_extra</mat-icon>
+        <span class="text-sm font-semibold">{{ 'buses.busTypes' | translate }}</span>
+      </div>
+      <mat-icon class="transition-transform duration-200 text-gray-400 text-sm" [class.rotate-180]="openSections['busType']">
+        expand_more
+      </mat-icon>
+    </div>
+    <div *ngIf="openSections['busType']" class="mt-2 space-y-2">
+      <label class="flex items-center gap-2.5 text-xs cursor-pointer p-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800/60 transition-colors">
+        <input type="checkbox" [checked]="filterState.busType.sleeper" (change)="toggleBusType('sleeper')"
+               class="rounded text-red-600 focus:ring-red-500 h-4 w-4 accent-red-600">
+        <span>Sleeper (स्लीपर)</span>
+      </label>
+      <label class="flex items-center gap-2.5 text-xs cursor-pointer p-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800/60 transition-colors">
+        <input type="checkbox" [checked]="filterState.busType.ac" (change)="toggleBusType('ac')"
+               class="rounded text-red-600 focus:ring-red-500 h-4 w-4 accent-red-600">
+        <span>AC (वातानुकूलित)</span>
+      </label>
+      <label class="flex items-center gap-2.5 text-xs cursor-pointer p-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800/60 transition-colors">
+        <input type="checkbox" [checked]="filterState.busType.nonac" (change)="toggleBusType('nonac')"
+               class="rounded text-red-600 focus:ring-red-500 h-4 w-4 accent-red-600">
+        <span>Non-AC (गैर-वातानुकूलित)</span>
+      </label>
+      <label class="flex items-center gap-2.5 text-xs cursor-pointer p-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800/60 transition-colors">
+        <input type="checkbox" [checked]="filterState.busType.seater" (change)="toggleBusType('seater')"
+               class="rounded text-red-600 focus:ring-red-500 h-4 w-4 accent-red-600">
+        <span>Seater (सीटर)</span>
+      </label>
+    </div>
+  </div>
+
+  <!-- 6. Departure Time (Collapsible Dropdown Accordion) -->
+  <div class="filter-section mb-4 pb-3 border-b border-gray-100 dark:border-slate-800">
+    <div class="section-header flex items-center justify-between cursor-pointer py-1" (click)="toggleSection('departureTime')">
+      <div class="flex items-center gap-2">
+        <mat-icon class="text-amber-500 dark:text-amber-400" style="font-size: 20px; width: 20px; height: 20px;">wb_sunny</mat-icon>
+        <span class="text-sm font-semibold">{{ 'buses.departureTime' | translate }}</span>
+      </div>
+      <mat-icon class="transition-transform duration-200 text-gray-400 text-sm" [class.rotate-180]="openSections['departureTime']">
+        expand_more
+      </mat-icon>
+    </div>
+    <div *ngIf="openSections['departureTime']" class="mt-2 space-y-2">
+      <label class="flex items-center gap-2.5 text-xs cursor-pointer p-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800/60 transition-colors">
+        <input type="checkbox" [checked]="filterState.departureTime.before6am" (change)="toggleDepartureTime('before6am')"
+               class="rounded text-red-600 focus:ring-red-500 h-4 w-4 accent-red-600">
+        <span>{{ 'buses.before6am' | translate }}</span>
+      </label>
+      <label class="flex items-center gap-2.5 text-xs cursor-pointer p-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800/60 transition-colors">
+        <input type="checkbox" [checked]="filterState.departureTime.sixTo12" (change)="toggleDepartureTime('sixTo12')"
+               class="rounded text-red-600 focus:ring-red-500 h-4 w-4 accent-red-600">
+        <span>{{ 'buses.6amTo12pm' | translate }}</span>
+      </label>
+      <label class="flex items-center gap-2.5 text-xs cursor-pointer p-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800/60 transition-colors">
+        <input type="checkbox" [checked]="filterState.departureTime.twelveTo6" (change)="toggleDepartureTime('twelveTo6')"
+               class="rounded text-red-600 focus:ring-red-500 h-4 w-4 accent-red-600">
+        <span>{{ 'buses.12pmTo6pm' | translate }}</span>
+      </label>
+      <label class="flex items-center gap-2.5 text-xs cursor-pointer p-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800/60 transition-colors">
+        <input type="checkbox" [checked]="filterState.departureTime.after6pm" (change)="toggleDepartureTime('after6pm')"
+               class="rounded text-red-600 focus:ring-red-500 h-4 w-4 accent-red-600">
+        <span>{{ 'buses.after6pm' | translate }}</span>
+      </label>
+    </div>
+  </div>
+
+  <!-- 7. Arrival Time (Collapsible Dropdown Accordion) -->
+  <div class="filter-section mb-4 pb-3 border-b border-gray-100 dark:border-slate-800">
+    <div class="section-header flex items-center justify-between cursor-pointer py-1" (click)="toggleSection('arrivalTime')">
+      <div class="flex items-center gap-2">
+        <mat-icon class="text-teal-600 dark:text-teal-400" style="font-size: 20px; width: 20px; height: 20px;">bedtime</mat-icon>
+        <span class="text-sm font-semibold">{{ 'buses.arrivalTime' | translate }}</span>
+      </div>
+      <mat-icon class="transition-transform duration-200 text-gray-400 text-sm" [class.rotate-180]="openSections['arrivalTime']">
+        expand_more
+      </mat-icon>
+    </div>
+    <div *ngIf="openSections['arrivalTime']" class="mt-2 space-y-2">
+      <label class="flex items-center gap-2.5 text-xs cursor-pointer p-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800/60 transition-colors">
+        <input type="checkbox" [checked]="filterState.arrivalTime.before6am" (change)="toggleArrivalTime('before6am')"
+               class="rounded text-red-600 focus:ring-red-500 h-4 w-4 accent-red-600">
+        <span>{{ 'buses.before6am' | translate }}</span>
+      </label>
+      <label class="flex items-center gap-2.5 text-xs cursor-pointer p-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800/60 transition-colors">
+        <input type="checkbox" [checked]="filterState.arrivalTime.sixTo12" (change)="toggleArrivalTime('sixTo12')"
+               class="rounded text-red-600 focus:ring-red-500 h-4 w-4 accent-red-600">
+        <span>{{ 'buses.6amTo12pm' | translate }}</span>
+      </label>
+      <label class="flex items-center gap-2.5 text-xs cursor-pointer p-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800/60 transition-colors">
+        <input type="checkbox" [checked]="filterState.arrivalTime.twelveTo6" (change)="toggleArrivalTime('twelveTo6')"
+               class="rounded text-red-600 focus:ring-red-500 h-4 w-4 accent-red-600">
+        <span>{{ 'buses.12pmTo6pm' | translate }}</span>
+      </label>
+      <label class="flex items-center gap-2.5 text-xs cursor-pointer p-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800/60 transition-colors">
+        <input type="checkbox" [checked]="filterState.arrivalTime.after6pm" (change)="toggleArrivalTime('after6pm')"
+               class="rounded text-red-600 focus:ring-red-500 h-4 w-4 accent-red-600">
+        <span>{{ 'buses.after6pm' | translate }}</span>
+      </label>
+    </div>
+  </div>
+
+  <!-- 8. Features & Tracking (Collapsible Dropdown Accordion) -->
+  <div class="filter-section mb-4 pb-3 border-b border-gray-100 dark:border-slate-800">
+    <div class="section-header flex items-center justify-between cursor-pointer py-1" (click)="toggleSection('features')">
+      <div class="flex items-center gap-2">
+        <mat-icon class="text-rose-600 dark:text-rose-400" style="font-size: 20px; width: 20px; height: 20px;">verified</mat-icon>
+        <span class="text-sm font-semibold">Special Features</span>
+      </div>
+      <mat-icon class="transition-transform duration-200 text-gray-400 text-sm" [class.rotate-180]="openSections['features']">
+        expand_more
+      </mat-icon>
+    </div>
+    <div *ngIf="openSections['features']" class="mt-2 space-y-2">
+      <label class="flex items-center justify-between text-xs cursor-pointer p-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800/60 transition-colors"
+             (click)="toggleLiveTracking()">
+        <div class="flex items-center gap-2">
+          <mat-icon class="text-green-600 text-base" style="font-size: 18px; width: 18px; height: 18px;">gps_fixed</mat-icon>
+          <span>{{ 'buses.liveTracking' | translate }}</span>
+        </div>
+        <mat-icon *ngIf="filterState.liveTracking" class="text-green-600 text-sm">check_circle</mat-icon>
+        <mat-icon *ngIf="!filterState.liveTracking" class="text-gray-300 text-sm">radio_button_unchecked</mat-icon>
+      </label>
+
+      <label class="flex items-center justify-between text-xs cursor-pointer p-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800/60 transition-colors"
+             (click)="toggleReschedulable()">
+        <div class="flex items-center gap-2">
+          <mat-icon class="text-blue-600 text-base" style="font-size: 18px; width: 18px; height: 18px;">restore</mat-icon>
+          <span>{{ 'buses.reschedulable' | translate }}</span>
+        </div>
+        <mat-icon *ngIf="filterState.reschedulable" class="text-blue-600 text-sm">check_circle</mat-icon>
+        <mat-icon *ngIf="!filterState.reschedulable" class="text-gray-300 text-sm">radio_button_unchecked</mat-icon>
+      </label>
+    </div>
+  </div>
+
+  <!-- 9. Amenities (Collapsible Dropdown Accordion) -->
+  <div class="filter-section mb-2">
+    <div class="section-header flex items-center justify-between cursor-pointer py-1" (click)="toggleSection('amenities')">
+      <div class="flex items-center gap-2">
+        <mat-icon class="text-cyan-600 dark:text-cyan-400" style="font-size: 20px; width: 20px; height: 20px;">spa</mat-icon>
+        <span class="text-sm font-semibold">{{ 'buses.amenities' | translate }}</span>
+      </div>
+      <mat-icon class="transition-transform duration-200 text-gray-400 text-sm" [class.rotate-180]="openSections['amenities']">
+        expand_more
+      </mat-icon>
+    </div>
+    <div *ngIf="openSections['amenities']" class="mt-2 space-y-2">
+      <label class="flex items-center gap-2.5 text-xs cursor-pointer p-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800/60 transition-colors">
+        <input type="checkbox" [checked]="filterState.amenities.wifi" (change)="toggleAmenity('wifi')"
+               class="rounded text-red-600 focus:ring-red-500 h-4 w-4 accent-red-600">
+        <mat-icon style="font-size: 16px; width: 16px; height: 16px;">wifi</mat-icon>
+        <span>WiFi</span>
+      </label>
+      <label class="flex items-center gap-2.5 text-xs cursor-pointer p-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800/60 transition-colors">
+        <input type="checkbox" [checked]="filterState.amenities.chargingPoint" (change)="toggleAmenity('chargingPoint')"
+               class="rounded text-red-600 focus:ring-red-500 h-4 w-4 accent-red-600">
+        <mat-icon style="font-size: 16px; width: 16px; height: 16px;">battery_charging_full</mat-icon>
+        <span>Charging Point</span>
+      </label>
+      <label class="flex items-center gap-2.5 text-xs cursor-pointer p-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800/60 transition-colors">
+        <input type="checkbox" [checked]="filterState.amenities.waterBottle" (change)="toggleAmenity('waterBottle')"
+               class="rounded text-red-600 focus:ring-red-500 h-4 w-4 accent-red-600">
+        <mat-icon style="font-size: 16px; width: 16px; height: 16px;">local_drink</mat-icon>
+        <span>Water Bottle</span>
+      </label>
+      <label class="flex items-center gap-2.5 text-xs cursor-pointer p-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800/60 transition-colors">
+        <input type="checkbox" [checked]="filterState.amenities.blankets" (change)="toggleAmenity('blankets')"
+               class="rounded text-red-600 focus:ring-red-500 h-4 w-4 accent-red-600">
+        <mat-icon style="font-size: 16px; width: 16px; height: 16px;">hotel</mat-icon>
+        <span>Blanket</span>
+      </label>
+      <label class="flex items-center gap-2.5 text-xs cursor-pointer p-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800/60 transition-colors">
+        <input type="checkbox" [checked]="filterState.amenities.movie" (change)="toggleAmenity('movie')"
+               class="rounded text-red-600 focus:ring-red-500 h-4 w-4 accent-red-600">
+        <mat-icon style="font-size: 16px; width: 16px; height: 16px;">movie</mat-icon>
+        <span>Movie / Entertainment</span>
+      </label>
+    </div>
+  </div>
+</div>

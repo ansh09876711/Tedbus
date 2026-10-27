@@ -1,0 +1,38 @@
+<div>
+    <app-sorting-bar [totalCount]="rawBuses.length" [matchedCount]="matchedbus.length"></app-sorting-bar>
+
+    <!-- Loading State -->
+    <div *ngIf="loading" class="text-center py-16 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-800 my-4 text-gray-500">
+        <mat-icon class="animate-spin text-red-600 mb-2" style="font-size: 36px; width: 36px; height: 36px;">refresh</mat-icon>
+        <p class="text-sm font-medium">Finding best buses for {{departurevar}} &rarr; {{arrival}}...</p>
+    </div>
+
+    <!-- Filtered Out: No Matches -->
+    <div *ngIf="!loading && rawBuses.length > 0 && matchedbus.length === 0" 
+         class="text-center py-12 bg-white dark:bg-slate-900 rounded-2xl shadow-sm p-8 my-4 border border-gray-200 dark:border-slate-800">
+        <mat-icon class="text-amber-500 mb-2" style="font-size: 48px; width: 48px; height: 48px;">filter_alt_off</mat-icon>
+        <h3 class="text-base font-bold text-gray-800 dark:text-gray-100 mt-2">{{ 'buses.noFilterMatch' | translate }}</h3>
+        <p class="text-xs text-gray-500 mt-1 mb-4">Try relaxing your filter options or reset all filters.</p>
+        <button (click)="resetAllFilters()" 
+                class="inline-flex items-center gap-1.5 bg-red-600 hover:bg-red-700 text-white font-semibold text-xs px-4 py-2 rounded-xl transition-all shadow-sm cursor-pointer">
+            <mat-icon style="font-size: 16px; width: 16px; height: 16px;">restart_alt</mat-icon>
+            <span>{{ 'buses.resetFilters' | translate }}</span>
+        </button>
+    </div>
+
+    <!-- No Buses on Route -->
+    <div *ngIf="!loading && rawBuses.length === 0" 
+         class="text-center py-12 bg-white dark:bg-slate-900 rounded-2xl shadow-sm p-8 my-4 border border-gray-100 dark:border-slate-800">
+        <mat-icon class="text-gray-400 mb-2" style="font-size: 48px; width: 48px; height: 48px;">directions_bus</mat-icon>
+        <h3 class="text-base font-bold text-gray-700 dark:text-gray-200 mt-2">No Buses Found</h3>
+        <p class="text-xs text-gray-500 mt-1">Please choose another travel date or route.</p>
+    </div>
+
+    <!-- Bus List Cards -->
+    <div *ngFor="let bus of matchedbus; index as i">
+        <app-bus-box [rating]="bus.rating" [busid]="bus._id || ''" [operatorname]="bus.operatorName" [bustype]="bus.busType"
+            [departuretime]="bus.departureTime" [livetracking]="bus.liveTracking" [reschedulable]="bus.reschedulable" 
+            [filledseats]="(bus._id ? seats[bus._id] : null) || [3, 7, 18, 25]"
+            [routedetails]="routes"></app-bus-box>
+    </div>
+</div>

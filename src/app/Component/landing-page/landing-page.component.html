@@ -1,0 +1,517 @@
+<!-- ===================== HERO SECTION ===================== -->
+<section class="min-h-[38rem] py-10 relative overflow-hidden flex justify-center shadow-inner">
+  <!-- 5 High-Resolution Bus Background Photos with Smooth Dynamic Crossfade -->
+  <div class="absolute inset-0 w-full h-full overflow-hidden pointer-events-none">
+    <div *ngFor="let img of busImages; let idx = index"
+         class="bus-slide-bg absolute inset-0 w-full h-full bg-cover bg-center"
+         [style.backgroundImage]="'url(' + img + ')'"
+         [class.opacity-100]="currentImageIndex === idx"
+         [class.opacity-0]="currentImageIndex !== idx"
+         [class.scale-105]="currentImageIndex === idx"
+         [class.scale-100]="currentImageIndex !== idx">
+    </div>
+    <!-- Red gradient overlay for aesthetic branding & maximum legibility -->
+    <div class="absolute inset-0 bg-gradient-to-r from-red-950/85 via-red-800/75 to-rose-950/85"></div>
+    <div class="absolute inset-0 bg-black/20"></div>
+  </div>
+
+  <div class="flex flex-col items-center w-full max-w-[1400px] relative z-10 px-4">
+    <h1 class="text-2xl md:text-[2.5rem] text-white font-black mt-8 md:mt-12 mb-3 text-center tracking-tight drop-shadow-lg">
+      {{ 'home.heroTitle' | translate }}
+    </h1>
+    <p class="text-red-100 text-sm md:text-base font-normal mb-3 text-center max-w-2xl px-4 drop-shadow">
+      {{ 'home.heroSubtitle' | translate }}
+    </p>
+
+    <!-- ===== SEARCH WIDGET with SWAP BUTTON ===== -->
+    <div class="w-[95%] sm:w-[88%] mt-6 bg-white dark:bg-slate-800 relative flex flex-col lg:flex-row rounded-2xl md:rounded-3xl overflow-visible shadow-2xl border border-gray-100 dark:border-slate-700">
+
+      <!-- FROM CITY -->
+      <div class="h-full border-b lg:border-b-0 lg:border-r border-gray-200 dark:border-slate-700 lg:w-1/4 w-full">
+        <div class="px-6 py-5 flex items-center h-full gap-3 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors rounded-l-3xl">
+          <i class="fa-solid fa-bus text-red-500 text-xl"></i>
+          <div class="flex flex-col w-full">
+            <span class="text-[11px] text-gray-400 dark:text-gray-300 font-semibold uppercase tracking-wider">{{ 'home.from' | translate }}</span>
+            <input class="outline-none w-full text-base font-semibold text-gray-800 dark:text-white bg-transparent placeholder-gray-400" type="text" placeholder="Departure City"
+              [matMenuTriggerFor]="menu" [(ngModel)]="fromoption">
+          </div>
+          <mat-menu #menu="matMenu">
+            <button mat-menu-item (click)="fromEvent('Delhi')"><mat-icon>location_on</mat-icon> Delhi</button>
+            <button mat-menu-item (click)="fromEvent('Mumbai')"><mat-icon>location_on</mat-icon> Mumbai</button>
+            <button mat-menu-item (click)="fromEvent('Bangalore')"><mat-icon>location_on</mat-icon> Bangalore</button>
+            <button mat-menu-item (click)="fromEvent('Kolkata')"><mat-icon>location_on</mat-icon> Kolkata</button>
+            <button mat-menu-item (click)="fromEvent('Chennai')"><mat-icon>location_on</mat-icon> Chennai</button>
+          </mat-menu>
+        </div>
+      </div>
+
+      <!-- SWAP BUTTON (floating between From & To) -->
+      <div class="hidden lg:flex absolute left-[25%] top-1/2 -translate-y-1/2 z-20">
+        <button (click)="swapCities()"
+          class="w-9 h-9 rounded-full bg-white dark:bg-slate-700 border-2 border-red-500 shadow-lg flex items-center justify-center hover:bg-red-500 hover:text-white text-red-500 transition-all duration-200 group cursor-pointer"
+          title="Swap cities">
+          <mat-icon class="text-lg group-hover:text-white" style="font-size:18px;width:18px;height:18px;">swap_horiz</mat-icon>
+        </button>
+      </div>
+
+      <!-- TO CITY -->
+      <div class="h-full border-b lg:border-b-0 lg:border-r border-gray-200 dark:border-slate-700 lg:w-1/4 w-full">
+        <div class="px-6 py-5 flex items-center h-full gap-3 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors">
+          <i class="fa-solid fa-location-dot text-red-500 text-xl"></i>
+          <div class="flex flex-col w-full">
+            <span class="text-[11px] text-gray-400 dark:text-gray-300 font-semibold uppercase tracking-wider">{{ 'home.to' | translate }}</span>
+            <input class="outline-none w-full text-base font-semibold text-gray-800 dark:text-white bg-transparent placeholder-gray-400" type="text" placeholder="Destination City"
+              [matMenuTriggerFor]="menu2" [(ngModel)]="tooption">
+          </div>
+          <mat-menu #menu2="matMenu">
+            <button mat-menu-item (click)="toEvent('Jaipur')"><mat-icon>pin_drop</mat-icon> Jaipur</button>
+            <button mat-menu-item (click)="toEvent('Goa')"><mat-icon>pin_drop</mat-icon> Goa</button>
+            <button mat-menu-item (click)="toEvent('Mysore')"><mat-icon>pin_drop</mat-icon> Mysore</button>
+            <button mat-menu-item (click)="toEvent('Darjeeling')"><mat-icon>pin_drop</mat-icon> Darjeeling</button>
+            <button mat-menu-item (click)="toEvent('Pondicherry')"><mat-icon>pin_drop</mat-icon> Pondicherry</button>
+          </mat-menu>
+        </div>
+      </div>
+
+      <!-- Mobile Swap Button -->
+      <div class="flex lg:hidden justify-center py-2 border-b border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/50">
+        <button (click)="swapCities()"
+          class="px-4 py-1.5 rounded-full border border-red-400 text-red-500 text-xs font-semibold flex items-center gap-1.5 hover:bg-red-50 transition-all cursor-pointer">
+          <mat-icon style="font-size:15px;width:15px;height:15px;">swap_horiz</mat-icon>
+          Swap Cities
+        </button>
+      </div>
+
+      <!-- DATE PICKER -->
+      <div class="h-full border-b lg:border-b-0 lg:border-r border-gray-200 dark:border-slate-700 lg:w-1/4 w-full">
+        <div class="px-6 py-5 flex items-center h-full gap-3 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors relative cursor-pointer" (click)="picker.open()">
+          <i class="fa-solid fa-calendar-days text-red-500 text-xl"></i>
+          <div class="flex flex-col w-full">
+            <span class="text-[11px] text-gray-400 dark:text-gray-300 font-semibold uppercase tracking-wider">{{ 'home.date' | translate }}</span>
+            <span class="text-base font-semibold text-gray-800 dark:text-white">{{ date || 'Select Date' }}</span>
+          </div>
+          <input matInput class="outline-none opacity-0 absolute inset-0 cursor-pointer pointer-events-none"
+            placeholder="Date" [matDatepicker]="picker"
+            (dateChange)="matchDate($event)">
+          <mat-datepicker #picker></mat-datepicker>
+        </div>
+      </div>
+
+      <!-- SEARCH BUTTON -->
+      <button class="px-8 py-5 lg:w-1/4 w-full flex items-center justify-center bg-red-600 hover:bg-red-700 active:scale-95 transition-all whitespace-nowrap text-white font-bold text-base shadow-md tracking-wider uppercase rounded-b-2xl lg:rounded-r-3xl lg:rounded-bl-none cursor-pointer"
+        (click)="submit()">
+        <i class="fa fa-search mr-2"></i> {{ 'home.searchBuses' | translate }}
+      </button>
+    </div>
+
+    <!-- Popular Routes quick link -->
+    <div class="flex flex-wrap items-center justify-center gap-3 mt-5">
+      <button (click)="openRoutesDialog()" class="px-4 py-1.5 rounded-full bg-white/20 hover:bg-white/30 text-white text-xs font-semibold backdrop-blur-md transition-all flex items-center gap-1.5 cursor-pointer shadow-md border border-white/30">
+        <mat-icon style="font-size: 15px; width: 15px; height: 15px;">alt_route</mat-icon>
+        <span>{{ 'home.popularRoutes' | translate }} &rarr;</span>
+      </button>
+    </div>
+
+    <!-- 5 Bus Slideshow Indicator Dots & Arrows -->
+    <div class="mt-6 flex items-center gap-2">
+      <button type="button" (click)="prevSlide()" class="text-white/70 hover:text-white p-1 rounded-full hover:bg-white/20 transition-all cursor-pointer" aria-label="Previous photo">
+        <mat-icon style="font-size: 18px; width: 18px; height: 18px;">chevron_left</mat-icon>
+      </button>
+
+      <div class="flex items-center gap-1.5">
+        <span *ngFor="let img of busImages; let idx = index"
+              (click)="setSlide(idx)"
+              [ngClass]="currentImageIndex === idx ? 'w-7 bg-white' : 'w-2 bg-white/40'"
+              class="h-2 rounded-full transition-all duration-300 cursor-pointer shadow-sm inline-block">
+        </span>
+      </div>
+
+      <button type="button" (click)="nextSlide()" class="text-white/70 hover:text-white p-1 rounded-full hover:bg-white/20 transition-all cursor-pointer" aria-label="Next photo">
+        <mat-icon style="font-size: 18px; width: 18px; height: 18px;">chevron_right</mat-icon>
+      </button>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== STATS TRUST STRIP ===================== -->
+<section class="flex justify-center -mt-6 mb-2 relative z-20">
+  <div class="w-[92%] sm:w-[88%] max-w-[1100px] bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700 px-4 py-5">
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div *ngFor="let stat of stats" class="flex flex-col items-center justify-center gap-1 p-3 rounded-xl hover:bg-red-50 dark:hover:bg-slate-700/50 transition-colors group cursor-default">
+        <mat-icon class="text-red-500 text-3xl group-hover:scale-110 transition-transform" style="font-size:32px;width:32px;height:32px;">{{stat.icon}}</mat-icon>
+        <span class="text-xl md:text-2xl font-black text-gray-900 dark:text-white tracking-tight">{{stat.value}}</span>
+        <span class="text-xs text-gray-500 dark:text-gray-400 font-medium text-center">{{stat.label}}</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== WHY TEDBUS SECTION ===================== -->
+<section class="flex justify-center py-14 bg-gray-50 dark:bg-slate-900/50 mt-8">
+  <div class="flex flex-col items-center w-full px-6 md:px-0 md:w-[88%] max-w-[1200px]">
+    <div class="text-center mb-10">
+      <span class="text-xs font-bold tracking-widest text-red-500 uppercase">Why TedBus?</span>
+      <h2 class="text-2xl md:text-3xl font-extrabold text-gray-900 dark:text-white mt-2 tracking-tight">{{ 'home.whyChooseUs' | translate }}</h2>
+      <p class="text-gray-500 dark:text-gray-400 text-sm mt-2 max-w-xl mx-auto">We are committed to making every bus journey safe, affordable, and effortless</p>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 w-full">
+      <div *ngFor="let item of whyUs"
+           class="relative bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-md border border-gray-100 dark:border-slate-700 flex flex-col gap-4 hover:-translate-y-1 hover:shadow-xl transition-all duration-300 overflow-hidden group">
+        <!-- Gradient top bar -->
+        <div class="absolute top-0 left-0 right-0 h-1 rounded-t-2xl bg-gradient-to-r" [ngClass]="item.color"></div>
+        <!-- Icon bubble -->
+        <div class="w-12 h-12 rounded-xl bg-gradient-to-br flex items-center justify-center shadow-md" [ngClass]="item.color">
+          <mat-icon class="text-white" style="font-size:22px;width:22px;height:22px;">{{item.icon}}</mat-icon>
+        </div>
+        <div>
+          <h3 class="font-bold text-gray-900 dark:text-white text-base mb-1">{{item.title}}</h3>
+          <p class="text-gray-500 dark:text-gray-400 text-xs leading-relaxed">{{item.desc}}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== POPULAR ROUTES SECTION ===================== -->
+<section class="flex justify-center py-14">
+  <div class="flex flex-col w-full px-6 md:px-0 md:w-[88%] max-w-[1200px]">
+    <div class="flex items-center justify-between mb-8">
+      <div>
+        <span class="text-xs font-bold tracking-widest text-red-500 uppercase">Top Routes</span>
+        <h2 class="text-2xl md:text-3xl font-extrabold text-gray-900 dark:text-white mt-1 tracking-tight">{{ 'home.popularRoutes' | translate }}</h2>
+      </div>
+      <button (click)="openRoutesDialog()" class="text-red-600 dark:text-red-400 py-1.5 font-semibold text-xs md:text-sm px-4 rounded-full border border-red-200 dark:border-red-900/60 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors">
+        View All &rarr;
+      </button>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+      <div *ngFor="let route of popularRoutes"
+           (click)="bookRoute(route)"
+           class="flex items-center gap-4 bg-white dark:bg-slate-800 rounded-2xl px-5 py-4 border border-gray-100 dark:border-slate-700 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 cursor-pointer group">
+        <!-- Emoji icon -->
+        <div class="w-12 h-12 rounded-xl bg-red-50 dark:bg-red-950/40 flex items-center justify-center text-2xl flex-shrink-0 group-hover:scale-110 transition-transform">
+          {{route.icon}}
+        </div>
+        <!-- Route info -->
+        <div class="flex flex-col flex-1 min-w-0">
+          <div class="flex items-center gap-1.5 font-bold text-gray-900 dark:text-white text-sm">
+            <span class="truncate">{{route.from}}</span>
+            <mat-icon class="text-red-400 flex-shrink-0" style="font-size:16px;width:16px;height:16px;">arrow_forward</mat-icon>
+            <span class="truncate">{{route.to}}</span>
+          </div>
+          <span class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 flex items-center gap-1">
+            <mat-icon style="font-size:12px;width:12px;height:12px;">schedule</mat-icon> {{route.duration}}
+          </span>
+        </div>
+        <!-- Price -->
+        <div class="flex flex-col items-end flex-shrink-0">
+          <span class="text-xs text-gray-400">From</span>
+          <span class="font-black text-red-600 dark:text-red-400 text-base">{{route.price}}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== OFFERS SECTION with TABS ===================== -->
+<section class="flex justify-center py-4 mb-8 bg-gray-50 dark:bg-slate-900/50">
+  <div class="flex flex-col items-center w-full max-w-[1200px] px-6 md:px-0 md:w-[88%]">
+    <div class="w-full p-6 md:p-8 flex flex-col gap-6 bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700">
+
+      <!-- Header + Tabs -->
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+        <div>
+          <h2 class="text-xl md:text-2xl font-bold text-gray-800 dark:text-white tracking-tight">{{ 'home.trendingOffers' | translate }}</h2>
+          <p class="text-xs text-gray-500 dark:text-gray-400">{{ 'home.offersSubtitle' | translate }}</p>
+        </div>
+        <!-- Offer Tabs -->
+        <div class="flex items-center gap-1 bg-gray-100 dark:bg-slate-700 rounded-xl p-1">
+          <button (click)="activeOfferTab='all'"
+            [ngClass]="activeOfferTab==='all' ? 'bg-white dark:bg-slate-600 shadow text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'"
+            class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer">All</button>
+          <button (click)="activeOfferTab='bank'"
+            [ngClass]="activeOfferTab==='bank' ? 'bg-white dark:bg-slate-600 shadow text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'"
+            class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer">Bank Offers</button>
+          <button (click)="activeOfferTab='wallet'"
+            [ngClass]="activeOfferTab==='wallet' ? 'bg-white dark:bg-slate-600 shadow text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'"
+            class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer">Wallet</button>
+        </div>
+      </div>
+
+      <div class="flex text-white gap-5 overflow-x-auto pb-3">
+
+        <!-- Offer Card 1 (All) -->
+        <div *ngIf="activeOfferTab==='all' || activeOfferTab==='bank'"
+             class="offer-card h-44 w-72 rounded-2xl bg-gradient-to-br from-blue-700 to-indigo-600 flex flex-col justify-between p-5 cursor-pointer flex-shrink-0 shadow-lg hover:scale-[1.02] transition-transform relative overflow-hidden">
+          <div class="absolute -right-4 -top-4 w-20 h-20 rounded-full bg-white/10"></div>
+          <div class="flex justify-between items-start relative z-10">
+            <span class="text-[10px] px-2 py-0.5 bg-white/20 rounded-full font-bold uppercase tracking-wider">{{ 'home.offer1.badge' | translate }}</span>
+            <i class="fa fa-ticket text-xl opacity-60"></i>
+          </div>
+          <div class="relative z-10">
+            <h3 class="font-bold text-lg leading-tight">{{ 'home.offer1.title' | translate }}</h3>
+            <p class="text-xs opacity-80 mt-1">{{ 'home.offer1.validity' | translate }}</p>
+          </div>
+          <div class="flex items-center justify-between pt-2 border-t border-white/20 relative z-10">
+            <span class="bg-white/20 px-2.5 py-1 rounded-md font-mono text-xs font-bold border border-dashed border-white/40">FIRST</span>
+            <span class="text-xs opacity-75">{{ 'home.offer1.copyCode' | translate }}</span>
+          </div>
+        </div>
+
+        <!-- Offer Card 2 (All) -->
+        <div *ngIf="activeOfferTab==='all'"
+             class="offer-card h-44 w-72 rounded-2xl bg-gradient-to-br from-rose-600 to-red-500 flex flex-col justify-between p-5 cursor-pointer flex-shrink-0 shadow-lg hover:scale-[1.02] transition-transform relative overflow-hidden">
+          <div class="absolute -right-4 -top-4 w-20 h-20 rounded-full bg-white/10"></div>
+          <div class="flex justify-between items-start relative z-10">
+            <span class="text-[10px] px-2 py-0.5 bg-white/20 rounded-full font-bold uppercase tracking-wider">{{ 'home.offer2.badge' | translate }}</span>
+            <i class="fa fa-tags text-xl opacity-60"></i>
+          </div>
+          <div class="relative z-10">
+            <h3 class="font-bold text-lg leading-tight">{{ 'home.offer2.title' | translate }}</h3>
+            <p class="text-xs opacity-80 mt-1">{{ 'home.offer2.validity' | translate }}</p>
+          </div>
+          <div class="flex items-center justify-between pt-2 border-t border-white/20 relative z-10">
+            <span class="bg-white/20 px-2.5 py-1 rounded-md font-mono text-xs font-bold border border-dashed border-white/40">SUPERHIT</span>
+            <span class="text-xs opacity-75">{{ 'home.offer2.copyCode' | translate }}</span>
+          </div>
+        </div>
+
+        <!-- Offer Card 3 (All + Wallet) -->
+        <div *ngIf="activeOfferTab==='all' || activeOfferTab==='wallet'"
+             class="offer-card h-44 w-72 rounded-2xl bg-gradient-to-br from-emerald-600 to-teal-500 flex flex-col justify-between p-5 cursor-pointer flex-shrink-0 shadow-lg hover:scale-[1.02] transition-transform relative overflow-hidden">
+          <div class="absolute -right-4 -top-4 w-20 h-20 rounded-full bg-white/10"></div>
+          <div class="flex justify-between items-start relative z-10">
+            <span class="text-[10px] px-2 py-0.5 bg-white/20 rounded-full font-bold uppercase tracking-wider">{{ 'home.offer3.badge' | translate }}</span>
+            <i class="fa fa-gift text-xl opacity-60"></i>
+          </div>
+          <div class="relative z-10">
+            <h3 class="font-bold text-lg leading-tight">{{ 'home.offer3.title' | translate }}</h3>
+            <p class="text-xs opacity-80 mt-1">{{ 'home.offer3.validity' | translate }}</p>
+          </div>
+          <div class="flex items-center justify-between pt-2 border-t border-white/20 relative z-10">
+            <span class="bg-white/20 px-2.5 py-1 rounded-md font-mono text-xs font-bold border border-dashed border-white/40">BUS300</span>
+            <span class="text-xs opacity-75">{{ 'home.offer3.copyCode' | translate }}</span>
+          </div>
+        </div>
+
+        <!-- Offer Card 4 (All + Bank) -->
+        <div *ngIf="activeOfferTab==='all' || activeOfferTab==='bank'"
+             class="offer-card h-44 w-72 rounded-2xl bg-gradient-to-br from-cyan-600 to-blue-500 flex flex-col justify-between p-5 cursor-pointer flex-shrink-0 shadow-lg hover:scale-[1.02] transition-transform relative overflow-hidden">
+          <div class="absolute -right-4 -top-4 w-20 h-20 rounded-full bg-white/10"></div>
+          <div class="flex justify-between items-start relative z-10">
+            <span class="text-[10px] px-2 py-0.5 bg-white/20 rounded-full font-bold uppercase tracking-wider">{{ 'home.offer4.badge' | translate }}</span>
+            <i class="fa fa-plane-departure text-xl opacity-60"></i>
+          </div>
+          <div class="relative z-10">
+            <h3 class="font-bold text-lg leading-tight">{{ 'home.offer4.title' | translate }}</h3>
+            <p class="text-xs opacity-80 mt-1">{{ 'home.offer4.validity' | translate }}</p>
+          </div>
+          <div class="flex items-center justify-between pt-2 border-t border-white/20 relative z-10">
+            <span class="bg-white/20 px-2.5 py-1 rounded-md font-mono text-xs font-bold border border-dashed border-white/40">RBTRIP</span>
+            <span class="text-xs opacity-75">{{ 'home.offer4.copyCode' | translate }}</span>
+          </div>
+        </div>
+
+        <!-- Wallet-only card -->
+        <div *ngIf="activeOfferTab==='wallet'"
+             class="offer-card h-44 w-72 rounded-2xl bg-gradient-to-br from-violet-600 to-purple-500 flex flex-col justify-between p-5 cursor-pointer flex-shrink-0 shadow-lg hover:scale-[1.02] transition-transform relative overflow-hidden">
+          <div class="absolute -right-4 -top-4 w-20 h-20 rounded-full bg-white/10"></div>
+          <div class="flex justify-between items-start relative z-10">
+            <span class="text-[10px] px-2 py-0.5 bg-white/20 rounded-full font-bold uppercase tracking-wider">Wallet Cash</span>
+            <i class="fa fa-wallet text-xl opacity-60"></i>
+          </div>
+          <div class="relative z-10 text-white">
+            <h3 class="font-bold text-lg leading-tight">₹100 Cashback on Wallet Pay</h3>
+            <p class="text-xs opacity-80 mt-1">Use TedBus Wallet & get instant cashback</p>
+          </div>
+          <div class="flex items-center justify-between pt-2 border-t border-white/20 relative z-10">
+            <span class="bg-white/20 px-2.5 py-1 rounded-md font-mono text-xs font-bold border border-dashed border-white/40">WALLET</span>
+            <span class="text-xs opacity-75">Copy code</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== APP DOWNLOAD BANNER ===================== -->
+<section class="flex justify-center py-14">
+  <div class="w-[92%] sm:w-[88%] max-w-[1200px] rounded-3xl bg-gradient-to-br from-red-600 via-red-700 to-rose-800 shadow-2xl overflow-hidden relative">
+    <!-- background decoration circles -->
+    <div class="absolute -top-10 -right-10 w-64 h-64 rounded-full bg-white/5 pointer-events-none"></div>
+    <div class="absolute bottom-0 left-20 w-40 h-40 rounded-full bg-white/5 pointer-events-none"></div>
+
+    <div class="flex flex-col md:flex-row items-center justify-between px-8 md:px-14 py-10 gap-8 relative z-10">
+      <!-- Left: Text -->
+      <div class="flex flex-col text-white max-w-md">
+        <span class="text-xs font-bold tracking-widest uppercase text-red-200 mb-2">📱 Get the App</span>
+        <h2 class="text-2xl md:text-3xl font-extrabold leading-tight tracking-tight mb-3">Book Bus Tickets<br>On the Go!</h2>
+        <p class="text-red-100 text-sm leading-relaxed mb-6">Download the TedBus app for lightning-fast bookings, real-time tracking, exclusive app-only deals, and 24/7 support at your fingertips.</p>
+        <!-- Store Buttons -->
+        <div class="flex flex-wrap gap-3">
+          <button class="flex items-center gap-3 bg-black/40 hover:bg-black/60 text-white border border-white/20 px-5 py-3 rounded-xl transition-all group cursor-pointer">
+            <mat-icon style="font-size:22px;width:22px;height:22px;">phone_android</mat-icon>
+            <div class="text-left">
+              <div class="text-[10px] text-red-200">Get it on</div>
+              <div class="text-sm font-bold">Google Play</div>
+            </div>
+          </button>
+          <button class="flex items-center gap-3 bg-black/40 hover:bg-black/60 text-white border border-white/20 px-5 py-3 rounded-xl transition-all group cursor-pointer">
+            <mat-icon style="font-size:22px;width:22px;height:22px;">phone_iphone</mat-icon>
+            <div class="text-left">
+              <div class="text-[10px] text-red-200">Download on the</div>
+              <div class="text-sm font-bold">App Store</div>
+            </div>
+          </button>
+        </div>
+        <!-- Rating badges -->
+        <div class="flex items-center gap-4 mt-5">
+          <div class="flex items-center gap-1.5 text-yellow-300">
+            <i class="fa fa-star text-sm"></i>
+            <i class="fa fa-star text-sm"></i>
+            <i class="fa fa-star text-sm"></i>
+            <i class="fa fa-star text-sm"></i>
+            <i class="fa fa-star text-sm"></i>
+            <span class="text-white text-xs font-semibold ml-1">4.8/5</span>
+          </div>
+          <span class="text-red-200 text-xs">25 Lakh+ Downloads</span>
+        </div>
+      </div>
+
+      <!-- Right: Phone Mockup -->
+      <div class="flex flex-col items-center justify-center">
+        <div class="w-40 h-72 rounded-[2rem] border-4 border-white/30 bg-black/30 backdrop-blur-sm shadow-2xl flex flex-col items-center justify-center relative overflow-hidden">
+          <div class="w-24 h-3 bg-black/50 rounded-full absolute top-4"></div>
+          <div class="w-full h-full flex flex-col items-center justify-center gap-3 px-4 pt-8">
+            <mat-icon class="text-white opacity-80" style="font-size:40px;width:40px;height:40px;">directions_bus</mat-icon>
+            <span class="text-white font-bold text-sm text-center">TedBus</span>
+            <span class="text-red-200 text-[10px] text-center">Fast • Safe • Reliable</span>
+            <div class="mt-2 px-4 py-1.5 bg-red-500 rounded-lg text-white text-[10px] font-bold">Book Now</div>
+          </div>
+          <!-- QR code placeholder -->
+          <div class="absolute bottom-4 right-4 w-10 h-10 bg-white/20 rounded-md flex items-center justify-center">
+            <mat-icon class="text-white opacity-70" style="font-size:18px;width:18px;height:18px;">qr_code</mat-icon>
+          </div>
+        </div>
+        <span class="text-red-200 text-xs mt-3">Scan QR to download</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== FAQs SECTION ===================== -->
+<section class="flex justify-center my-10 md:my-16">
+  <div class="flex flex-col w-full px-6 md:px-0 md:w-[88%] max-w-[1200px]">
+    <div class="text-center mb-8">
+      <span class="text-xs font-bold tracking-widest text-red-500 uppercase">Support</span>
+      <h2 class="text-gray-900 dark:text-white text-2xl md:text-3xl font-extrabold mt-2 tracking-tight">{{ 'home.faqTitle' | translate }}</h2>
+    </div>
+
+    <div class="flex flex-col gap-4">
+      <div class="p-6 cursor-pointer bg-white dark:bg-slate-800 group hover:bg-slate-50 dark:hover:bg-slate-700/60 rounded-2xl border border-gray-200 dark:border-slate-700 transition-all shadow-sm">
+        <div class="flex justify-between items-center font-semibold text-gray-800 dark:text-white text-base md:text-lg">
+          <h3>{{ 'home.faq1.q' | translate }}</h3>
+          <i class="fa-solid fa-chevron-down text-gray-400 group-hover:text-red-600 transition-colors"></i>
+        </div>
+        <p class="text-xs md:text-sm text-gray-600 dark:text-gray-300 mt-4 leading-relaxed">
+          {{ 'home.faq1.a' | translate }}
+        </p>
+      </div>
+
+      <div class="p-6 cursor-pointer bg-white dark:bg-slate-800 group hover:bg-slate-50 dark:hover:bg-slate-700/60 rounded-2xl border border-gray-200 dark:border-slate-700 transition-all shadow-sm">
+        <div class="flex justify-between items-center font-semibold text-gray-800 dark:text-white text-base md:text-lg">
+          <h3>{{ 'home.faq2.q' | translate }}</h3>
+          <i class="fa-solid fa-chevron-down text-gray-400 group-hover:text-red-600 transition-colors"></i>
+        </div>
+        <p class="text-xs md:text-sm text-gray-600 dark:text-gray-300 mt-4 leading-relaxed">
+          {{ 'home.faq2.a' | translate }}
+        </p>
+      </div>
+
+      <div class="p-6 cursor-pointer bg-white dark:bg-slate-800 group hover:bg-slate-50 dark:hover:bg-slate-700/60 rounded-2xl border border-gray-200 dark:border-slate-700 transition-all shadow-sm">
+        <div class="flex justify-between items-center font-semibold text-gray-800 dark:text-white text-base md:text-lg">
+          <h3>{{ 'home.faq3.q' | translate }}</h3>
+          <i class="fa-solid fa-chevron-down text-gray-400 group-hover:text-red-600 transition-colors"></i>
+        </div>
+        <p class="text-xs md:text-sm text-gray-600 dark:text-gray-300 mt-4 leading-relaxed">
+          {{ 'home.faq3.a' | translate }}
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== PAYMENT LOGOS FOOTER STRIP ===================== -->
+<section class="flex justify-center pb-10">
+  <div class="w-[92%] sm:w-[88%] max-w-[1200px]">
+    <div class="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 px-6 py-5 shadow-sm">
+      <p class="text-center text-xs text-gray-400 dark:text-gray-500 font-semibold uppercase tracking-wider mb-4">Secure Payments Accepted</p>
+      <div class="flex flex-wrap items-center justify-center gap-6 md:gap-10">
+        <!-- UPI -->
+        <div class="flex flex-col items-center gap-1">
+          <div class="w-14 h-8 bg-gradient-to-r from-orange-500 to-green-500 rounded-lg flex items-center justify-center shadow-sm">
+            <span class="text-white text-xs font-black tracking-tighter">UPI</span>
+          </div>
+          <span class="text-[10px] text-gray-400">UPI</span>
+        </div>
+        <!-- Visa -->
+        <div class="flex flex-col items-center gap-1">
+          <div class="w-14 h-8 bg-blue-700 rounded-lg flex items-center justify-center shadow-sm">
+            <span class="text-white text-xs font-black italic tracking-tight">VISA</span>
+          </div>
+          <span class="text-[10px] text-gray-400">Visa</span>
+        </div>
+        <!-- Mastercard -->
+        <div class="flex flex-col items-center gap-1">
+          <div class="w-14 h-8 bg-gray-800 rounded-lg flex items-center justify-center shadow-sm gap-1">
+            <div class="w-4 h-4 rounded-full bg-red-500 opacity-90"></div>
+            <div class="w-4 h-4 rounded-full bg-yellow-400 opacity-90 -ml-2"></div>
+          </div>
+          <span class="text-[10px] text-gray-400">Mastercard</span>
+        </div>
+        <!-- Paytm -->
+        <div class="flex flex-col items-center gap-1">
+          <div class="w-14 h-8 bg-sky-500 rounded-lg flex items-center justify-center shadow-sm">
+            <span class="text-white text-[10px] font-black tracking-tight">Paytm</span>
+          </div>
+          <span class="text-[10px] text-gray-400">Paytm</span>
+        </div>
+        <!-- PhonePe -->
+        <div class="flex flex-col items-center gap-1">
+          <div class="w-14 h-8 bg-purple-700 rounded-lg flex items-center justify-center shadow-sm">
+            <span class="text-white text-[10px] font-black tracking-tight">PhonePe</span>
+          </div>
+          <span class="text-[10px] text-gray-400">PhonePe</span>
+        </div>
+        <!-- GPay -->
+        <div class="flex flex-col items-center gap-1">
+          <div class="w-14 h-8 bg-white border border-gray-200 rounded-lg flex items-center justify-center shadow-sm gap-0.5">
+            <span class="text-blue-600 text-[10px] font-black">G</span>
+            <span class="text-red-500 text-[10px] font-black">P</span>
+            <span class="text-yellow-500 text-[10px] font-black">a</span>
+            <span class="text-green-500 text-[10px] font-black">y</span>
+          </div>
+          <span class="text-[10px] text-gray-400">GPay</span>
+        </div>
+        <!-- Net Banking -->
+        <div class="flex flex-col items-center gap-1">
+          <div class="w-14 h-8 bg-gray-700 rounded-lg flex items-center justify-center shadow-sm">
+            <mat-icon class="text-white" style="font-size:16px;width:16px;height:16px;">account_balance</mat-icon>
+          </div>
+          <span class="text-[10px] text-gray-400">Net Banking</span>
+        </div>
+        <!-- SSL Badge -->
+        <div class="flex flex-col items-center gap-1">
+          <div class="w-14 h-8 bg-green-600 rounded-lg flex items-center justify-center shadow-sm gap-1">
+            <mat-icon class="text-white" style="font-size:14px;width:14px;height:14px;">lock</mat-icon>
+            <span class="text-white text-[10px] font-bold">SSL</span>
+          </div>
+          <span class="text-[10px] text-gray-400">256-bit SSL</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

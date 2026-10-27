@@ -1,0 +1,129 @@
+<div class="sorting-wrapper bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl shadow-sm p-4 mb-4">
+  <!-- Safety Banner -->
+  <div class="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300 pb-3 border-b border-gray-100 dark:border-slate-800">
+    <mat-icon class="text-emerald-600 dark:text-emerald-400" style="font-size: 18px; width: 18px; height: 18px;">verified_user</mat-icon>
+    <span>{{ 'buses.safetyNotice' | translate }}</span>
+  </div>
+
+  <!-- Header & Sort Dropdown Row -->
+  <div class="flex flex-wrap items-center justify-between gap-3 pt-3 pb-2">
+    <div class="flex items-center gap-2">
+      <span class="font-extrabold text-sm sm:text-base text-gray-900 dark:text-gray-100 uppercase tracking-wide">
+        {{ 'buses.busesList' | translate }}
+      </span>
+      <span class="text-xs bg-red-50 dark:bg-red-950/50 text-red-600 dark:text-red-400 font-semibold px-2.5 py-1 rounded-full border border-red-200 dark:border-red-900">
+        {{ matchedCount }} {{ 'buses.busesFound' | translate }}
+      </span>
+    </div>
+
+    <!-- Dropdown for Sorting -->
+    <div class="flex items-center gap-2">
+      <label class="text-xs font-semibold text-gray-500 dark:text-gray-400 flex items-center gap-1">
+        <mat-icon style="font-size: 16px; width: 16px; height: 16px;">swap_vert</mat-icon>
+        <span>{{ 'buses.sortBy' | translate }}:</span>
+      </label>
+      <select [value]="filterState.sortBy || 'recommended'" (change)="onSortChange($event)"
+              class="sort-dropdown bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-800 dark:text-gray-200 text-xs font-medium rounded-xl px-3 py-2 focus:ring-2 focus:ring-red-500 focus:outline-none transition-all cursor-pointer">
+        <option value="recommended">{{ 'buses.sortRecommended' | translate }}</option>
+        <option value="price_low">{{ 'buses.sortPriceLow' | translate }}</option>
+        <option value="price_high">{{ 'buses.sortPriceHigh' | translate }}</option>
+        <option value="rating_high">{{ 'buses.sortRatingHigh' | translate }}</option>
+        <option value="dep_early">{{ 'buses.sortDepEarly' | translate }}</option>
+        <option value="dep_late">{{ 'buses.sortDepLate' | translate }}</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Active Filter Badges / Chips -->
+  <div *ngIf="activeFilterCount > 0" class="flex flex-wrap items-center gap-1.5 pt-2 pb-1 border-t border-gray-100 dark:border-slate-800 text-xs">
+    <span class="text-gray-400 font-medium mr-1">{{ 'buses.filters' | translate }}:</span>
+
+    <!-- Price Chip -->
+    <span *ngIf="filterState.priceRange && filterState.priceRange !== 'all'" 
+          class="inline-flex items-center gap-1 bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-300 px-2 py-0.5 rounded-full font-medium">
+      {{ filterState.priceRange === 'under500' ? ('buses.under500' | translate) : (filterState.priceRange === '500to1000' ? ('buses.price500to1000' | translate) : ('buses.above1000' | translate)) }}
+      <button (click)="removePriceFilter()" class="hover:text-red-900 font-bold ml-0.5">&times;</button>
+    </span>
+
+    <!-- Boarding Chip -->
+    <span *ngIf="filterState.selectedBoarding" 
+          class="inline-flex items-center gap-1 bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-full font-medium">
+      From: {{ filterState.selectedBoarding }}
+      <button (click)="removeBoardingFilter()" class="hover:text-blue-900 font-bold ml-0.5">&times;</button>
+    </span>
+
+    <!-- Dropping Chip -->
+    <span *ngIf="filterState.selectedDropping" 
+          class="inline-flex items-center gap-1 bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300 px-2 py-0.5 rounded-full font-medium">
+      To: {{ filterState.selectedDropping }}
+      <button (click)="removeDroppingFilter()" class="hover:text-amber-900 font-bold ml-0.5">&times;</button>
+    </span>
+
+    <!-- Operator Chip -->
+    <span *ngIf="filterState.selectedOperator" 
+          class="inline-flex items-center gap-1 bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 px-2 py-0.5 rounded-full font-medium">
+      {{ filterState.selectedOperator }}
+      <button (click)="removeOperatorFilter()" class="hover:text-purple-900 font-bold ml-0.5">&times;</button>
+    </span>
+
+    <!-- Bus Types Chips -->
+    <span *ngIf="filterState.busType.sleeper" 
+          class="inline-flex items-center gap-1 bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-gray-300 px-2 py-0.5 rounded-full font-medium">
+      Sleeper
+      <button (click)="removeBusType('sleeper')" class="font-bold ml-0.5">&times;</button>
+    </span>
+    <span *ngIf="filterState.busType.ac" 
+          class="inline-flex items-center gap-1 bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-gray-300 px-2 py-0.5 rounded-full font-medium">
+      AC
+      <button (click)="removeBusType('ac')" class="font-bold ml-0.5">&times;</button>
+    </span>
+    <span *ngIf="filterState.busType.nonac" 
+          class="inline-flex items-center gap-1 bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-gray-300 px-2 py-0.5 rounded-full font-medium">
+      Non-AC
+      <button (click)="removeBusType('nonac')" class="font-bold ml-0.5">&times;</button>
+    </span>
+    <span *ngIf="filterState.busType.seater" 
+          class="inline-flex items-center gap-1 bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-gray-300 px-2 py-0.5 rounded-full font-medium">
+      Seater
+      <button (click)="removeBusType('seater')" class="font-bold ml-0.5">&times;</button>
+    </span>
+
+    <!-- Live Tracking -->
+    <span *ngIf="filterState.liveTracking" 
+          class="inline-flex items-center gap-1 bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-300 px-2 py-0.5 rounded-full font-medium">
+      Live Tracking
+      <button (click)="removeLiveTracking()" class="font-bold ml-0.5">&times;</button>
+    </span>
+
+    <!-- Reschedulable -->
+    <span *ngIf="filterState.reschedulable" 
+          class="inline-flex items-center gap-1 bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-full font-medium">
+      Reschedulable
+      <button (click)="removeReschedulable()" class="font-bold ml-0.5">&times;</button>
+    </span>
+
+    <button (click)="clearAll()" class="text-xs text-red-600 dark:text-red-400 font-semibold underline ml-1 hover:text-red-800">
+      {{ 'buses.clearAll' | translate }}
+    </button>
+  </div>
+
+  <!-- Column Sort Header (Desktop/Tablet) -->
+  <div class="hidden md:grid grid-cols-12 gap-2 text-xs font-bold text-gray-500 dark:text-gray-400 pt-3 border-t border-gray-100 dark:border-slate-800 select-none">
+    <div class="col-span-3">BUS OPERATOR</div>
+    <div class="col-span-2 cursor-pointer hover:text-red-600 flex items-center gap-1" (click)="sortByColumn('departure')">
+      <span>{{ 'buses.departure' | translate }}</span>
+      <mat-icon style="font-size: 14px; width: 14px; height: 14px;">unfold_more</mat-icon>
+    </div>
+    <div class="col-span-1 text-center">{{ 'buses.duration' | translate }}</div>
+    <div class="col-span-2 text-center">{{ 'buses.arrival' | translate }}</div>
+    <div class="col-span-1 text-center cursor-pointer hover:text-red-600 flex items-center justify-center gap-0.5" (click)="sortByColumn('rating')">
+      <span>{{ 'buses.ratings' | translate }}</span>
+      <mat-icon style="font-size: 14px; width: 14px; height: 14px;">unfold_more</mat-icon>
+    </div>
+    <div class="col-span-1 text-right cursor-pointer hover:text-red-600 flex items-center justify-end gap-0.5" (click)="sortByColumn('fare')">
+      <span>{{ 'buses.fare' | translate }}</span>
+      <mat-icon style="font-size: 14px; width: 14px; height: 14px;">unfold_more</mat-icon>
+    </div>
+    <div class="col-span-2 text-right">{{ 'buses.availableSeats' | translate }}</div>
+  </div>
+</div>

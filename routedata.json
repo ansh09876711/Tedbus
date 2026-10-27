@@ -1,0 +1,146 @@
+[
+  {
+    "_id": { "$oid": "66385c2c5a63e8cbd6abb0aa" },
+    "departureLocation": {
+      "name": "Delhi",
+      "subLocations": [
+        "Connaught Place",
+        "Chandni Chowk",
+        "Lajpat Nagar",
+        "ISBT Kashmiri Gate",
+        "Dhaula Kuan"
+      ]
+    },
+    "arrivalLocation": {
+      "name": "Jaipur",
+      "subLocations": [
+        "Hawa Mahal",
+        "Amer Fort",
+        "Jantar Mantar",
+        "Sindhi Camp",
+        "Narayan Singh Circle"
+      ]
+    },
+    "duration": 5
+  },
+  {
+    "_id": { "$oid": "66385c3a5a63e8cbd6abba12" },
+    "departureLocation": {
+      "name": "Mumbai",
+      "subLocations": [
+        "Gateway of India",
+        "Marine Drive",
+        "Bandra",
+        "Borivali",
+        "Dadar"
+      ]
+    },
+    "arrivalLocation": {
+      "name": "Goa",
+      "subLocations": [
+        "Calangute Beach",
+        "Baga Beach",
+        "Old Goa",
+        "Panaji",
+        "Madgaon"
+      ]
+    },
+    "duration": 10
+  },
+  {
+    "_id": { "$oid": "66385c4c5a63e8cbd6abc47c" },
+    "departureLocation": {
+      "name": "Kolkata",
+      "subLocations": [
+        "Victoria Memorial",
+        "Howrah Bridge",
+        "Park Street",
+        "Esplanade",
+        "Salt Lake"
+      ]
+    },
+    "arrivalLocation": {
+      "name": "Darjeeling",
+      "subLocations": [
+        "Tiger Hill",
+        "Darjeeling Himalayan Railway",
+        "Batasia Loop",
+        "Mall Road",
+        "Ghum"
+      ]
+    },
+    "duration": 8
+  },
+  {
+    "_id": { "$oid": "66385c5a5a63e8cbd6abcbe8" },
+    "departureLocation": {
+      "name": "Bangalore",
+      "subLocations": [
+        "MG Road",
+        "Indiranagar",
+        "Koramangala",
+        "Majestic",
+        "Electronic City"
+      ]
+    },
+    "arrivalLocation": {
+      "name": "Mysore",
+      "subLocations": [
+        "Mysore Palace",
+        "Chamundi Hill",
+        "Brindavan Gardens",
+        "Suburban Bus Stand",
+        "Columbia Asia Hospital"
+      ]
+    },
+    "duration": 3
+  },
+  {
+    "_id": { "$oid": "66385c895a63e8cbd6abe697" },
+    "departureLocation": {
+      "name": "Chennai",
+      "subLocations": [
+        "Marina Beach",
+        "Kapaleeshwarar Temple",
+        "Elliot's Beach",
+        "Koyambedu",
+        "Guindy"
+      ]
+    },
+    "arrivalLocation": {
+      "name": "Pondicherry",
+      "subLocations": [
+        "Auroville",
+        "Paradise Beach",
+        "French Colony",
+        "White Town",
+        "Rock Beach"
+      ]
+    },
+    "duration": 6
+  },
+  {
+    "_id": { "$oid": "66385c995a63e8cbd6abf201" },
+    "departureLocation": {
+      "name": "Bangalore",
+      "subLocations": [
+        "Majestic",
+        "Electronic City",
+        "Silk Board",
+        "Indiranagar",
+        "Hebbal"
+      ]
+    },
+    "arrivalLocation": {
+      "name": "Darjeeling",
+      "subLocations": [
+        "Mall Road",
+        "Tiger Hill",
+        "Ghum",
+        "Batasia Loop",
+        "Chauk Bazaar"
+      ]
+    },
+    "duration": 24
+  }
+]

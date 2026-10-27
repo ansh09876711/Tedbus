@@ -1,0 +1,33 @@
+.selectbus {
+  background-color: #f8fafc;
+  min-height: 100vh;
+}
+
+:host-context(.dark) .selectbus {
+  background-color: #0f172a;
+}
+
+.SelectBUS_MAINCONTENT {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 24px;
+  max-width: 1360px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+@media (max-width: 1024px) {
+  .SelectBUS_MAINCONTENT {
+    grid-template-columns: 260px 1fr;
+    gap: 16px;
+    padding: 16px;
+  }
+}
+
+@media (max-width: 860px) {
+  .SelectBUS_MAINCONTENT {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    padding: 12px;
+  }
+}

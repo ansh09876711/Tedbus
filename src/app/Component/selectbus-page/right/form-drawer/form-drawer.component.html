@@ -1,0 +1,25 @@
+<button class="proceedButton" (click)="toggleDrawer()">
+    Proceed To Book
+</button>
+
+<!-- Slide-out Drawer / Overlay -->
+<div class="drawer-overlay" *ngIf="isDrawerOpen" (click)="closeDrawer()"></div>
+<div class="drawer-panel" [ngClass]="{'open': isDrawerOpen}">
+    <div class="drawer-header">
+        <h3 class="text-lg font-bold text-gray-800">Passenger & Booking Details</h3>
+        <button class="close-btn" (click)="closeDrawer()">
+            <mat-icon>close</mat-icon>
+        </button>
+    </div>
+    <div class="drawer-content">
+        <app-bus-booking-form 
+            [selectedseat]="selectedseat" 
+            [seatprice]="seatprice" 
+            [busid]="busid" 
+            [routedetails]="routedetails" 
+            [busarrivaltime]="busarrivaltime" 
+            [busdeparturetime]="busdeparturetime" 
+            [operatorname]="operatorname"
+            (bookingSuccess)="closeDrawer()"></app-bus-booking-form>
+    </div>
+</div>

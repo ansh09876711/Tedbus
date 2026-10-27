@@ -1,0 +1,67 @@
+<div class="mainContainer">
+    <div class="seat-layout-section">
+        <div class="bus-interior">
+            <div class="driver-cabin">
+                <i class="material-icons driver-icon" title="Driver">donut_large</i>
+            </div>
+            <div class="seat-rows">
+                <div class="seat-row">
+                    <ng-container *ngFor="let index of generatearray(10)">
+                        <app-small-seats [seatno]="index" [alreadybookedseats]="filledseats"
+                            (seatselected)="handleselectedseats($event)" [selectedseats]="selectedseats"></app-small-seats>
+                    </ng-container>
+                </div>
+                <div class="seat-row">
+                    <ng-container *ngFor="let index of generatearray(10)">
+                        <app-small-seats [seatno]="10 + index" [alreadybookedseats]="filledseats"
+                            (seatselected)="handleselectedseats($event)" [selectedseats]="selectedseats"></app-small-seats>
+                    </ng-container>
+                </div>
+                <div class="bus-aisle">Aisle</div>
+                <div class="seat-row">
+                    <ng-container *ngFor="let index of generatearray(10)">
+                        <app-small-seats [seatno]="20 + index" [alreadybookedseats]="filledseats"
+                            (seatselected)="handleselectedseats($event)" [selectedseats]="selectedseats"></app-small-seats>
+                    </ng-container>
+                </div>
+                <div class="seat-row">
+                    <ng-container *ngFor="let index of generatearray(10)">
+                        <app-small-seats [seatno]="30 + index" [alreadybookedseats]="filledseats"
+                            (seatselected)="handleselectedseats($event)" [selectedseats]="selectedseats"></app-small-seats>
+                    </ng-container>
+                </div>
+            </div>
+        </div>
+        <div class="seat-legend">
+            <div class="legend-item"><span class="legend-box available-box"></span> Available</div>
+            <div class="legend-item"><span class="legend-box booked-box"></span> Booked</div>
+            <div class="legend-item"><span class="legend-box selected-box"></span> Selected</div>
+        </div>
+    </div>
+
+    <div class="booking-summary-section">
+        <div class="summary-card">
+            <h4>Booking Summary</h4>
+            <div class="summary-line">
+                <span>Selected Seats:</span>
+                <span class="font-bold text-red-600">{{selectedseats.length ? selectedseats.join(', ') : 'None'}}</span>
+            </div>
+            <div class="summary-line">
+                <span>Seat Price:</span>
+                <span>INR {{seatprice}}</span>
+            </div>
+            <div class="summary-line font-bold border-t pt-2 mt-2">
+                <span>Total Fare:</span>
+                <span class="text-green-600">INR {{getTotalPrice()}}</span>
+            </div>
+            <div class="drawer-trigger mt-4" *ngIf="selectedseats.length > 0">
+                <app-form-drawer [selectedseat]="selectedseats" [seatprice]="seatprice" [busid]="busid"
+                    [routedetails]="routedetails" [busarrivaltime]="busarrivaltime"
+                    [busdeparturetime]="busdeparturetime" [operatorname]="operatorname"></app-form-drawer>
+            </div>
+            <p *ngIf="selectedseats.length === 0" class="text-xs text-gray-400 mt-3 text-center">
+                Please select at least 1 seat to continue
+            </p>
+        </div>
+    </div>
+</div>

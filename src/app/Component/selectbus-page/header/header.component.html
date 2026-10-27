@@ -1,0 +1,146 @@
+<!-- ===== ENHANCED SELECT-BUS HEADER ===== -->
+<div class="header-wrapper">
+
+  <!-- Breadcrumb Navigation -->
+  <div class="bg-gray-50 dark:bg-slate-900 border-b border-gray-100 dark:border-slate-800 px-4 sm:px-6 py-2.5">
+    <div class="max-w-[1360px] mx-auto flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 flex-wrap">
+      <button (click)="goHome()" class="hover:text-red-600 dark:hover:text-red-400 transition-colors cursor-pointer font-medium flex items-center gap-1">
+        <mat-icon style="font-size:14px;width:14px;height:14px;">home</mat-icon>
+        Home
+      </button>
+      <mat-icon class="text-gray-300 dark:text-gray-600" style="font-size:14px;width:14px;height:14px;">chevron_right</mat-icon>
+      <span>Bus Tickets</span>
+      <mat-icon class="text-gray-300 dark:text-gray-600" style="font-size:14px;width:14px;height:14px;">chevron_right</mat-icon>
+      <span>{{departure}} Bus</span>
+      <mat-icon class="text-gray-300 dark:text-gray-600" style="font-size:14px;width:14px;height:14px;">chevron_right</mat-icon>
+      <span class="text-gray-800 dark:text-white font-semibold">{{departure}} to {{arrival}}</span>
+    </div>
+  </div>
+
+  <!-- Main Route Header Bar -->
+  <div class="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 px-4 sm:px-6 py-4 shadow-sm">
+    <div class="max-w-[1360px] mx-auto">
+
+      <!-- Route Info Row -->
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+
+        <!-- Left: Route & Date -->
+        <div class="flex items-center gap-4 flex-wrap">
+          <!-- Departure -->
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-lg bg-red-50 dark:bg-red-950/40 flex items-center justify-center">
+              <mat-icon class="text-red-600 dark:text-red-400" style="font-size:18px;width:18px;height:18px;">trip_origin</mat-icon>
+            </div>
+            <span class="font-bold text-base sm:text-lg text-gray-900 dark:text-white">{{departure}}</span>
+          </div>
+
+          <!-- Arrow -->
+          <div class="flex items-center gap-1">
+            <div class="w-6 h-0.5 bg-red-300 dark:bg-red-700 rounded-full"></div>
+            <mat-icon class="text-red-500 dark:text-red-400" style="font-size:18px;width:18px;height:18px;">arrow_forward</mat-icon>
+            <div class="w-6 h-0.5 bg-red-300 dark:bg-red-700 rounded-full"></div>
+          </div>
+
+          <!-- Arrival -->
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-lg bg-green-50 dark:bg-green-950/40 flex items-center justify-center">
+              <mat-icon class="text-green-600 dark:text-green-400" style="font-size:18px;width:18px;height:18px;">location_on</mat-icon>
+            </div>
+            <span class="font-bold text-base sm:text-lg text-gray-900 dark:text-white">{{arrival}}</span>
+          </div>
+
+          <!-- Date Badge -->
+          <div *ngIf="date" class="flex items-center gap-2 ml-2 bg-amber-50 dark:bg-amber-950/40 px-3 py-1.5 rounded-xl border border-amber-200 dark:border-amber-800">
+            <mat-icon class="text-amber-600 dark:text-amber-400" style="font-size:16px;width:16px;height:16px;">calendar_today</mat-icon>
+            <div class="flex flex-col">
+              <span class="text-xs font-bold text-amber-900 dark:text-amber-200">{{displayDate}}</span>
+              <span class="text-[10px] text-amber-600 dark:text-amber-400">{{dayOfWeek}}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Quick Date Navigation + Modify Button -->
+        <div class="flex items-center gap-2 flex-wrap">
+          <!-- Prev Day -->
+          <button (click)="changeDate(-1)"
+                  class="px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-slate-700 hover:bg-red-100 dark:hover:bg-red-950/40 text-gray-700 dark:text-gray-300 hover:text-red-600 text-xs font-semibold transition-all flex items-center gap-1 cursor-pointer">
+            <mat-icon style="font-size:14px;width:14px;height:14px;">chevron_left</mat-icon>
+            Prev Day
+          </button>
+          <!-- Next Day -->
+          <button (click)="changeDate(1)"
+                  class="px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-slate-700 hover:bg-red-100 dark:hover:bg-red-950/40 text-gray-700 dark:text-gray-300 hover:text-red-600 text-xs font-semibold transition-all flex items-center gap-1 cursor-pointer">
+            Next Day
+            <mat-icon style="font-size:14px;width:14px;height:14px;">chevron_right</mat-icon>
+          </button>
+
+          <!-- Modify Search Button -->
+          <button (click)="toggleModifySearch()"
+                  [ngClass]="showModifySearch ? 'bg-red-600 text-white' : 'bg-white dark:bg-slate-700 text-red-600 dark:text-red-400 border border-red-300 dark:border-red-700'"
+                  class="px-4 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer hover:shadow-md">
+            <mat-icon style="font-size:14px;width:14px;height:14px;">{{showModifySearch ? 'close' : 'edit'}}</mat-icon>
+            {{showModifySearch ? 'Cancel' : 'Modify Search'}}
+          </button>
+        </div>
+      </div>
+
+      <!-- Expandable Modify Search Form -->
+      <div *ngIf="showModifySearch" class="mt-4 pt-4 border-t border-gray-100 dark:border-slate-700">
+        <div class="flex flex-col sm:flex-row items-stretch gap-3">
+          <!-- From -->
+          <div class="flex-1">
+            <label class="block text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1">From</label>
+            <input type="text" [(ngModel)]="editDeparture" placeholder="Departure City"
+                   class="w-full px-3 py-2.5 border border-gray-200 dark:border-slate-600 rounded-xl text-sm font-semibold bg-gray-50 dark:bg-slate-900 text-gray-900 dark:text-white outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100">
+          </div>
+          <!-- Swap -->
+          <div class="flex items-end justify-center pb-1">
+            <button (click)="swapCities()" title="Swap cities"
+                    class="w-9 h-9 rounded-full border-2 border-red-500 bg-white dark:bg-slate-800 text-red-500 hover:bg-red-500 hover:text-white flex items-center justify-center transition-all cursor-pointer shadow-sm">
+              <mat-icon style="font-size:18px;width:18px;height:18px;">swap_horiz</mat-icon>
+            </button>
+          </div>
+          <!-- To -->
+          <div class="flex-1">
+            <label class="block text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1">To</label>
+            <input type="text" [(ngModel)]="editArrival" placeholder="Arrival City"
+                   class="w-full px-3 py-2.5 border border-gray-200 dark:border-slate-600 rounded-xl text-sm font-semibold bg-gray-50 dark:bg-slate-900 text-gray-900 dark:text-white outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100">
+          </div>
+          <!-- Date -->
+          <div class="flex-1 sm:max-w-[180px]">
+            <label class="block text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Date</label>
+            <input type="date" [(ngModel)]="editDate"
+                   class="w-full px-3 py-2.5 border border-gray-200 dark:border-slate-600 rounded-xl text-sm font-semibold bg-gray-50 dark:bg-slate-900 text-gray-900 dark:text-white outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100 cursor-pointer">
+          </div>
+          <!-- Search Button -->
+          <div class="flex items-end">
+            <button (click)="applyModifiedSearch()"
+                    class="w-full sm:w-auto px-6 py-2.5 bg-red-600 hover:bg-red-700 active:scale-95 text-white font-bold rounded-xl shadow-md transition-all flex items-center justify-center gap-2 text-sm cursor-pointer whitespace-nowrap">
+              <mat-icon style="font-size:16px;width:16px;height:16px;">search</mat-icon>
+              Search
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Fare Info Strip -->
+      <div class="flex items-center gap-3 mt-3 text-xs text-gray-500 dark:text-gray-400 flex-wrap">
+        <span class="flex items-center gap-1">
+          <mat-icon class="text-green-600" style="font-size:14px;width:14px;height:14px;">currency_rupee</mat-icon>
+          Fare starts from <strong class="text-red-600 dark:text-red-400 ml-0.5">INR 100</strong>
+        </span>
+        <span class="w-1 h-1 bg-gray-300 dark:bg-slate-600 rounded-full"></span>
+        <span class="flex items-center gap-1">
+          <mat-icon class="text-blue-600" style="font-size:14px;width:14px;height:14px;">verified_user</mat-icon>
+          Verified Operators
+        </span>
+        <span class="w-1 h-1 bg-gray-300 dark:bg-slate-600 rounded-full"></span>
+        <span class="flex items-center gap-1">
+          <mat-icon class="text-amber-600" style="font-size:14px;width:14px;height:14px;">gps_fixed</mat-icon>
+          Live Tracking Available
+        </span>
+      </div>
+    </div>
+  </div>
+
+</div>

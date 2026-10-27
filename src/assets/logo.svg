@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 60" width="240" height="60">
+  <defs>
+    <linearGradient id="busGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ef4444" />
+      <stop offset="100%" stop-color="#b91c1c" />
+    </linearGradient>
+  </defs>
+  <!-- Bus icon -->
+  <g transform="translate(10, 8)">
+    <rect x="0" y="4" width="44" height="32" rx="6" fill="url(#busGrad)"/>
+    <rect x="4" y="8" width="16" height="12" rx="2" fill="#ffffff" opacity="0.9"/>
+    <rect x="24" y="8" width="16" height="12" rx="2" fill="#ffffff" opacity="0.9"/>
+    <circle cx="10" cy="38" r="5" fill="#1f2937"/>
+    <circle cx="10" cy="38" r="2" fill="#e5e7eb"/>
+    <circle cx="34" cy="38" r="5" fill="#1f2937"/>
+    <circle cx="34" cy="38" r="2" fill="#e5e7eb"/>
+    <circle cx="4" cy="24" r="2" fill="#fbbf24"/>
+    <circle cx="40" cy="24" r="2" fill="#fbbf24"/>
+  </g>
+  <!-- TedBus text -->
+  <text x="68" y="38" font-family="system-ui, -apple-system, sans-serif" font-size="28" font-weight="900" fill="#dc2626" letter-spacing="-0.5">Ted<tspan fill="#1e293b">Bus</tspan></text>
+</svg>

@@ -1,0 +1,6 @@
+<div class="seat cursor-pointer" [ngClass]="{'booked': isBooked, 'selected': checkSelected(), 'available': !isBooked && !checkSelected()}" (click)="handleclick()">
+    <i class="material-icons" [style.color]="isBooked ? '#bbb' : (checkSelected() ? '#4caf50' : '#4a4a4a')">
+        airline_seat_recline_extra
+    </i>
+    <span class="seat-num">{{seatno}}</span>
+</div>

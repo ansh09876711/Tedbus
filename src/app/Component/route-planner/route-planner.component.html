@@ -1,0 +1,273 @@
+<div class="route-planner-page max-w-6xl mx-auto py-8 px-4">
+
+  <!-- ======= HEADER ======= -->
+  <div class="bg-gradient-to-r from-red-600 via-red-700 to-rose-800 rounded-2xl p-6 md:p-8 text-white shadow-xl mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 relative overflow-hidden">
+    <div class="absolute -top-8 -right-8 w-40 h-40 rounded-full bg-white/5 pointer-events-none"></div>
+    <div class="absolute bottom-0 left-32 w-24 h-24 rounded-full bg-white/5 pointer-events-none"></div>
+    <div class="relative z-10">
+      <span class="px-3 py-1 bg-white/20 rounded-full text-xs font-semibold uppercase tracking-wider backdrop-blur-sm inline-block mb-2">
+        Smart Journey Planner
+      </span>
+      <h1 class="text-2xl md:text-3xl font-black tracking-tight">{{ 'routePlanner.title' | translate }}</h1>
+      <p class="text-red-100 text-sm mt-1 max-w-xl">{{ 'routePlanner.subtitle' | translate }}</p>
+    </div>
+    <!-- Save to Favourites Button -->
+    <button (click)="saveCurrentRoute()" [disabled]="isSaving || !hasCalculated"
+      [ngClass]="isSaved ? 'bg-green-400 text-white border-green-300' : 'bg-white text-red-600 hover:bg-red-50 border-white'"
+      class="relative z-10 px-5 py-2.5 font-bold rounded-xl shadow-md transition-all flex items-center gap-2 text-sm shrink-0 border cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed">
+      <mat-icon style="font-size: 20px; width: 20px; height: 20px;">{{ isSaved ? 'bookmark' : 'bookmark_add' }}</mat-icon>
+      <span>{{ isSaved ? (saveFeedback || 'Saved!') : ('routePlanner.saveRoute' | translate) }}</span>
+    </button>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+    <!-- ======= LEFT PANEL: Input Controls ======= -->
+    <div class="lg:col-span-1 bg-white dark:bg-slate-800/90 rounded-2xl border border-gray-100 dark:border-slate-800 p-6 shadow-sm h-fit space-y-5">
+      <h2 class="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2 border-b border-gray-100 dark:border-slate-700 pb-3">
+        <mat-icon class="text-red-600">tune</mat-icon>
+        Plan Your Journey
+      </h2>
+
+      <!-- Origin Input -->
+      <div>
+        <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5 flex items-center gap-1.5">
+          <span class="w-2.5 h-2.5 rounded-full bg-green-500 inline-block"></span>
+          {{ 'routePlanner.origin' | translate }}
+        </label>
+        <input type="text" [(ngModel)]="origin" placeholder="e.g. Delhi"
+               class="w-full px-3.5 py-2.5 border rounded-xl text-sm outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100 bg-gray-50 dark:bg-slate-900 text-gray-900 dark:text-white border-gray-200 dark:border-slate-700 transition-all">
+        <!-- Quick Origin Chips -->
+        <div class="flex flex-wrap gap-1.5 mt-2">
+          <span class="text-[10px] text-gray-400 self-center mr-1">Quick:</span>
+          <button *ngFor="let c of originCities" (click)="selectOriginCity(c)"
+                  [ngClass]="origin === c ? 'bg-red-100 text-red-700 dark:bg-red-950/60 dark:text-red-300 border-red-300' : 'bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-200 hover:bg-red-100 hover:text-red-700 border-transparent'"
+                  class="px-2 py-0.5 rounded-lg text-[11px] font-medium border transition-colors cursor-pointer">
+            {{ c }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Intermediate Stops -->
+      <div *ngIf="waypoints.length > 0" class="space-y-3">
+        <div *ngFor="let wp of waypoints; let i = index" class="relative">
+          <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-amber-500 inline-block"></span>
+            Intermediate Stop #{{ i + 1 }}
+          </label>
+          <div class="flex gap-2">
+            <input type="text" [(ngModel)]="wp.name" placeholder="e.g. Neemrana, Mathura"
+                   class="w-full px-3.5 py-2 border rounded-xl text-sm outline-none focus:border-red-500 bg-gray-50 dark:bg-slate-900 text-gray-900 dark:text-white border-gray-200 dark:border-slate-700">
+            <button (click)="removeWaypoint(i)" class="px-2.5 text-gray-400 hover:text-red-600 transition-colors rounded-lg hover:bg-red-50 cursor-pointer" title="Remove stop">
+              <mat-icon style="font-size: 20px; width: 20px; height: 20px;">remove_circle_outline</mat-icon>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Add Stop Button -->
+      <button (click)="addWaypoint()" [disabled]="waypoints.length >= 4"
+              class="w-full py-2 border-2 border-dashed border-gray-300 dark:border-slate-600 rounded-xl text-xs font-semibold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed">
+        <mat-icon style="font-size: 16px; width: 16px; height: 16px;">add_circle_outline</mat-icon>
+        <span>{{ 'routePlanner.addWaypoint' | translate }}</span>
+        <span *ngIf="waypoints.length > 0" class="text-gray-400">({{ waypoints.length }}/4)</span>
+      </button>
+
+      <!-- Destination Input -->
+      <div>
+        <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5 flex items-center gap-1.5">
+          <span class="w-2.5 h-2.5 rounded-full bg-red-600 inline-block"></span>
+          {{ 'routePlanner.destination' | translate }}
+        </label>
+        <input type="text" [(ngModel)]="destination" placeholder="e.g. Jaipur"
+               class="w-full px-3.5 py-2.5 border rounded-xl text-sm outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100 bg-gray-50 dark:bg-slate-900 text-gray-900 dark:text-white border-gray-200 dark:border-slate-700 transition-all">
+        <!-- Quick Destination Chips -->
+        <div class="flex flex-wrap gap-1.5 mt-2">
+          <span class="text-[10px] text-gray-400 self-center mr-1">Quick:</span>
+          <button *ngFor="let c of destinationCities" (click)="selectDestCity(c)"
+                  [ngClass]="destination === c ? 'bg-red-100 text-red-700 dark:bg-red-950/60 dark:text-red-300 border-red-300' : 'bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-200 hover:bg-red-100 hover:text-red-700 border-transparent'"
+                  class="px-2 py-0.5 rounded-lg text-[11px] font-medium border transition-colors cursor-pointer">
+            {{ c }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Calculate Route Button -->
+      <button (click)="calculateRoute()" [disabled]="isCalculating"
+              class="w-full py-3 bg-red-600 hover:bg-red-700 active:scale-95 text-white font-bold rounded-xl shadow-md transition-all flex items-center justify-center gap-2 text-sm cursor-pointer disabled:opacity-70">
+        <mat-icon *ngIf="!isCalculating" style="font-size: 18px; width: 18px; height: 18px;">directions</mat-icon>
+        <!-- Loading spinner -->
+        <div *ngIf="isCalculating" class="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin"></div>
+        <span>{{ isCalculating ? 'Calculating...' : ('routePlanner.calculateRoute' | translate) }}</span>
+      </button>
+
+      <!-- Book Buses CTA (shown after calculation) -->
+      <button *ngIf="hasCalculated" (click)="bookBusesForRoute()"
+              class="w-full py-3 bg-white dark:bg-slate-700 border-2 border-red-600 dark:border-red-400 text-red-600 dark:text-red-400 hover:bg-red-600 hover:text-white dark:hover:bg-red-600 dark:hover:text-white font-bold rounded-xl shadow-sm transition-all flex items-center justify-center gap-2 text-sm cursor-pointer">
+        <mat-icon style="font-size: 18px; width: 18px; height: 18px;">directions_bus</mat-icon>
+        <span>Book Buses for this Route</span>
+      </button>
+    </div>
+
+    <!-- ======= RIGHT PANEL: Route Visuals ======= -->
+    <div class="lg:col-span-2 space-y-5">
+
+      <!-- Loading State -->
+      <div *ngIf="isCalculating" class="bg-white dark:bg-slate-800/90 rounded-2xl border border-gray-100 dark:border-slate-800 p-8 shadow-sm flex flex-col items-center gap-4">
+        <div class="w-10 h-10 border-4 border-red-200 border-t-red-600 rounded-full animate-spin"></div>
+        <p class="text-sm text-gray-500 dark:text-gray-400 font-medium">Calculating best routes across Indian highways...</p>
+      </div>
+
+      <!-- Route Summary Stats (after calculation) -->
+      <div *ngIf="hasCalculated && !isCalculating" class="bg-white dark:bg-slate-800/90 rounded-2xl border border-gray-100 dark:border-slate-800 p-5 shadow-sm">
+        <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">Multi-Stop Journey Overview</h3>
+
+        <!-- Stops visual -->
+        <div class="flex flex-wrap items-center gap-2 mb-5">
+          <div class="flex items-center gap-2 bg-green-50 dark:bg-green-950/40 border border-green-200 dark:border-green-800 px-3.5 py-2 rounded-xl text-green-800 dark:text-green-300 text-xs font-bold">
+            <mat-icon style="font-size: 16px; width: 16px; height: 16px;">trip_origin</mat-icon>
+            <span>{{ origin }}</span>
+          </div>
+          <ng-container *ngFor="let wp of waypoints; let i = index">
+            <mat-icon class="text-gray-300 dark:text-slate-600" style="font-size: 16px; width: 16px; height: 16px;">arrow_forward</mat-icon>
+            <div class="flex items-center gap-2 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 px-3 py-2 rounded-xl text-amber-800 dark:text-amber-300 text-xs font-semibold">
+              <mat-icon style="font-size: 14px; width: 14px; height: 14px;">place</mat-icon>
+              <span>{{ wp.name || ('Stop #' + (i + 1)) }}</span>
+            </div>
+          </ng-container>
+          <mat-icon class="text-gray-300 dark:text-slate-600" style="font-size: 16px; width: 16px; height: 16px;">arrow_forward</mat-icon>
+          <div class="flex items-center gap-2 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 px-3.5 py-2 rounded-xl text-red-800 dark:text-red-300 text-xs font-bold">
+            <mat-icon style="font-size: 16px; width: 16px; height: 16px;">location_on</mat-icon>
+            <span>{{ destination }}</span>
+          </div>
+        </div>
+
+        <!-- Summary Stats Row -->
+        <div class="grid grid-cols-3 gap-3">
+          <div class="bg-gray-50 dark:bg-slate-900 rounded-xl p-3 text-center">
+            <mat-icon class="text-red-500 text-xl mb-1" style="font-size:22px;width:22px;height:22px;">straighten</mat-icon>
+            <div class="text-lg font-black text-gray-900 dark:text-white">{{ totalDistanceKm }} km</div>
+            <div class="text-[11px] text-gray-400">Total Distance</div>
+          </div>
+          <div class="bg-gray-50 dark:bg-slate-900 rounded-xl p-3 text-center">
+            <mat-icon class="text-blue-500 text-xl mb-1" style="font-size:22px;width:22px;height:22px;">schedule</mat-icon>
+            <div class="text-lg font-black text-gray-900 dark:text-white">{{ totalDurationHours }} hrs</div>
+            <div class="text-[11px] text-gray-400">Est. Travel Time</div>
+          </div>
+          <div class="bg-gray-50 dark:bg-slate-900 rounded-xl p-3 text-center">
+            <mat-icon class="text-amber-500 text-xl mb-1" style="font-size:22px;width:22px;height:22px;">toll</mat-icon>
+            <div class="text-lg font-black text-gray-900 dark:text-white">{{ totalTolls }}</div>
+            <div class="text-[11px] text-gray-400">Toll Plazas</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Route Alternatives Cards -->
+      <div *ngIf="hasCalculated && !isCalculating" class="space-y-4">
+        <h3 class="text-sm font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
+          <mat-icon class="text-red-600">compare_arrows</mat-icon>
+          {{ 'routePlanner.alternatives' | translate }}
+        </h3>
+
+        <div *ngFor="let alt of alternatives; let i = index"
+             (click)="selectAlternative(alt.id)"
+             [ngClass]="selectedAlternativeId === alt.id ? 'border-red-600 dark:border-red-500 bg-red-50/40 dark:bg-red-950/20 shadow-lg ring-2 ring-red-500/20' : 'border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-800/80 hover:border-red-300 dark:hover:border-red-700'"
+             class="border rounded-2xl p-5 cursor-pointer transition-all duration-200">
+
+          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-3">
+            <div>
+              <div class="flex items-center gap-2 flex-wrap">
+                <h4 class="font-bold text-gray-900 dark:text-white text-sm md:text-base">{{ alt.name }}</h4>
+                <span *ngIf="alt.recommended" class="px-2.5 py-0.5 bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-300 text-[10px] font-bold rounded-full uppercase tracking-wider">
+                  ✓ Fastest Route
+                </span>
+                <span *ngIf="selectedAlternativeId === alt.id" class="px-2.5 py-0.5 bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-300 text-[10px] font-bold rounded-full uppercase tracking-wider">
+                  ● Selected
+                </span>
+              </div>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ alt.via }}</p>
+            </div>
+            <div class="text-right shrink-0">
+              <div class="text-xl font-black text-red-600 dark:text-red-400">{{ alt.durationHours }} hrs</div>
+              <span class="text-xs font-semibold text-gray-500">{{ alt.distanceKm }} km</span>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-3 border-t border-gray-100 dark:border-slate-700 text-xs text-gray-600 dark:text-gray-300">
+            <div>
+              <span class="text-gray-400 block text-[11px] mb-0.5">Highway Type</span>
+              <strong class="text-[12px]">{{ alt.roadType }}</strong>
+            </div>
+            <div>
+              <span class="text-gray-400 block text-[11px] mb-0.5">Tolls Along Route</span>
+              <strong class="text-[12px]">{{ alt.tollCount }} Toll Plaza{{ alt.tollCount !== 1 ? 's' : '' }}</strong>
+            </div>
+            <div>
+              <span class="text-gray-400 block text-[11px] mb-0.5">Traffic Condition</span>
+              <strong [ngClass]="{
+                'text-green-600 dark:text-green-400': alt.trafficColor === 'green',
+                'text-amber-600 dark:text-amber-400': alt.trafficColor === 'amber',
+                'text-red-600 dark:text-red-400': alt.trafficColor === 'red'
+              }" class="text-[12px]">{{ alt.trafficStatus }}</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Book Buses CTA Banner -->
+      <div *ngIf="hasCalculated && !isCalculating"
+           class="bg-gradient-to-r from-red-600 to-rose-700 rounded-2xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-lg">
+        <div class="text-white">
+          <p class="font-bold text-base">Ready to book a bus for this route?</p>
+          <p class="text-red-100 text-xs mt-1">Find verified bus operators for {{ origin }} → {{ destination }}</p>
+        </div>
+        <button (click)="bookBusesForRoute()"
+                class="px-6 py-2.5 bg-white text-red-600 font-bold rounded-xl hover:bg-red-50 transition-all shadow flex items-center gap-2 text-sm whitespace-nowrap cursor-pointer">
+          <mat-icon style="font-size: 18px; width: 18px; height: 18px;">directions_bus</mat-icon>
+          Search Bus Tickets
+        </button>
+      </div>
+
+      <!-- Info Note -->
+      <div class="p-4 bg-blue-50 dark:bg-slate-800/70 border border-blue-200 dark:border-slate-700 rounded-xl text-xs text-blue-900 dark:text-blue-300 flex items-start gap-3">
+        <mat-icon class="text-blue-600 shrink-0">info</mat-icon>
+        <div>
+          <strong>Bus Service vs Navigation:</strong>
+          This route planner calculates driving corridors and intermediate stops across Indian highways. To reserve actual sleeper or seater bus tickets operated by verified partners, use the
+          <a routerLink="/" class="underline font-bold text-blue-700 dark:text-blue-200">Bus Tickets Search</a>.
+        </div>
+      </div>
+
+      <!-- Saved Routes Section -->
+      <div *ngIf="savedRoutes.length > 0" class="bg-white dark:bg-slate-800/90 rounded-2xl border border-gray-100 dark:border-slate-800 p-6 shadow-sm">
+        <h3 class="text-sm font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2 mb-4">
+          <mat-icon class="text-red-600">bookmarks</mat-icon>
+          {{ 'routePlanner.savedRoutes' | translate }}
+          <span class="ml-auto text-xs text-gray-400 font-normal">{{ savedRoutes.length }} saved</span>
+        </h3>
+        <div class="space-y-3">
+          <div *ngFor="let sr of savedRoutes; let i = index"
+               class="flex justify-between items-center p-3.5 rounded-xl bg-gray-50 dark:bg-slate-900 border border-gray-100 dark:border-slate-800 text-xs hover:border-red-200 transition-colors">
+            <div class="flex items-center gap-3 min-w-0">
+              <mat-icon class="text-red-500 flex-shrink-0" style="font-size:18px;width:18px;height:18px;">route</mat-icon>
+              <div class="min-w-0">
+                <strong class="text-gray-900 dark:text-white block truncate">{{ sr.routeName }}</strong>
+                <span class="text-gray-400">{{ sr.totalDistanceKm }} km • ~{{ (sr.estimatedDurationMin / 60).toFixed(1) }} hrs</span>
+              </div>
+            </div>
+            <div class="flex items-center gap-2 ml-3 flex-shrink-0">
+              <button (click)="loadSavedRouteIntoPlanner(sr)"
+                      class="px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 font-semibold text-xs transition-colors cursor-pointer">
+                Load
+              </button>
+              <button (click)="deleteSavedRoute(i, sr)" class="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer">
+                <mat-icon style="font-size: 16px; width: 16px; height: 16px;">delete_outline</mat-icon>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
