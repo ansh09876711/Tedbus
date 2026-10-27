@@ -5,6 +5,7 @@ import { Customer } from '../../model/customer.model';
 import { Router } from '@angular/router';
 import { ThemeService } from '../../service/theme.service';
 import { TranslationService, SupportedLanguage } from '../../service/translation.service';
+import { environment } from '../../../../environments/environment';
 
 @Component({
   selector: 'app-navbar',
@@ -14,13 +15,13 @@ import { TranslationService, SupportedLanguage } from '../../service/translation
 export class NavbarComponent implements OnInit, AfterViewInit {
   isloggedIn: boolean = false;
   showAuthModal: boolean = false;
-  loginName: string = 'Ansh Agarwal';
-  loginEmail: string = 'anshagarwal590@gmail.com';
+  loginName: string = '';
+  loginEmail: string = '';
   isSubmittingAuth: boolean = false;
   authErrorMessage: string = '';
 
-  // Google OAuth 2.0 Web Client ID
-  private readonly GOOGLE_CLIENT_ID = "516929954818-jr4ns8vssalh676heifk40dek11pjoer.apps.googleusercontent.com";
+  // Google OAuth 2.0 Web Client ID — sourced from environment configuration
+  private readonly GOOGLE_CLIENT_ID = environment.googleClientId;
 
   constructor(
     public router: Router, 
@@ -144,8 +145,12 @@ export class NavbarComponent implements OnInit, AfterViewInit {
     });
   }
 
+  /**
+   * Demo login has been disabled. Opens the standard auth modal instead.
+   * Personal developer credentials have been removed.
+   */
   handleDemoLogin(): void {
-    this.handleDirectSignIn('Ansh Agarwal', 'anshagarwal590@gmail.com');
+    this.openAuthModal();
   }
 
   private decodetoken(token: string) {

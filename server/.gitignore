@@ -1,0 +1,16 @@
+# Dependencies
+node_modules/
+
+# Environment Variables (Never commit to version control)
+.env
+.env.local
+.env.*.local
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS metadata
+.DS_Store
+Thumbs.db

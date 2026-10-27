@@ -1,17 +1,45 @@
-# See https://docs.github.com/get-started/getting-started-with-git/ignoring-files for more about ignoring files.
+# TedBus — Root .gitignore
+# Covers both frontend (Angular) and backend (Node/Express) in monorepo layout.
 
-# Compiled output
-/dist
-/tmp
-/out-tsc
-/bazel-out
+# ============================================================
+# Node.js / NPM
+# ============================================================
+node_modules/
+frontend/node_modules/
+server/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
 
-# Node
-/node_modules
-npm-debug.log
-yarn-error.log
+# ============================================================
+# Build outputs
+# ============================================================
+frontend/dist/
+dist/
+/tmp/
+/out-tsc/
+/bazel-out/
 
+# ============================================================
+# Environment & Secrets (NEVER commit credentials)
+# ============================================================
+.env
+.env.local
+.env.*.local
+server/.env
+server/.env.local
+server/.env.*.local
+
+# ============================================================
+# Angular CLI cache
+# ============================================================
+.angular/
+frontend/.angular/
+
+# ============================================================
 # IDEs and editors
+# ============================================================
 .idea/
 .project
 .classpath
@@ -19,24 +47,49 @@ yarn-error.log
 *.launch
 .settings/
 *.sublime-workspace
+.history/
 
+# ============================================================
 # Visual Studio Code
+# ============================================================
+# Allow shared team settings; block personal/machine-specific files
 .vscode/*
 !.vscode/settings.json
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
-.history/*
 
-# Miscellaneous
-/.angular/cache
-.sass-cache/
-/connect.lock
-/coverage
-/libpeerconnection.log
-testem.log
-/typings
-
-# System files
+# ============================================================
+# OS-generated files
+# ============================================================
 .DS_Store
 Thumbs.db
+desktop.ini
+
+# ============================================================
+# Logs
+# ============================================================
+logs/
+*.log
+npm-debug.log*
+
+# ============================================================
+# Coverage / test artefacts
+# ============================================================
+/coverage/
+frontend/coverage/
+
+# ============================================================
+# Miscellaneous
+# ============================================================
+.sass-cache/
+/connect.lock
+/libpeerconnection.log
+testem.log
+/typings/
+
+# Scratch and transient files
+powershell.cmd
+fix_angular_json.py
+console.log*
+{
