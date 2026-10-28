@@ -5,7 +5,7 @@ import { Customer } from '../../model/customer.model';
 import { Router } from '@angular/router';
 import { ThemeService } from '../../service/theme.service';
 import { TranslationService, SupportedLanguage } from '../../service/translation.service';
-import { environment } from '../../../../environments/environment';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-navbar',
