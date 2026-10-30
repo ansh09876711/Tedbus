@@ -81,10 +81,33 @@ export class ProfilePageComponent implements OnInit {
         picture: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80',
         isVerified: true
       };
+    } else if (this.user._id || this.user.email) {
+      this.loadCustomerProfile();
     }
 
     this.loadNotifications();
   }
+
+  loadCustomerProfile(): void {
+    const id = this.user._id || this.user.email;
+    this.http.get<any>(`${API_BASE_URL}customer/${id}`).subscribe({
+      next: (profile) => {
+        if (profile) {
+          if (profile.themePreference) {
+            this.themeService.setTheme(profile.themePreference);
+          }
+          if (profile.languagePreference) {
+            this.translationService.setLanguage(profile.languagePreference);
+          }
+          if (profile.notificationPreferences) {
+            this.notificationPrefs = { ...this.notificationPrefs, ...profile.notificationPreferences };
+          }
+        }
+      },
+      error: () => {}
+    });
+  }
+
 
   setTab(tab: string): void {
     this.activeTab = tab;

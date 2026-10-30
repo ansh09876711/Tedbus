@@ -1,5 +1,7 @@
 import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable } from 'rxjs';
+import { API_BASE_URL } from '../config';
 
 export type ThemeMode = 'light' | 'dark' | 'system';
 
@@ -17,7 +19,7 @@ export class ThemeService {
   private isDarkSubject = new BehaviorSubject<boolean>(this.checkIfDark(this.getInitialTheme()));
   isDark$: Observable<boolean> = this.isDarkSubject.asObservable();
 
-  constructor() {
+  constructor(private http: HttpClient) {
     this.applyTheme(this.currentThemeSubject.value);
 
     // Listen for system theme preference changes
@@ -28,6 +30,9 @@ export class ThemeService {
         }
       });
     }
+
+    // Initial sync with logged-in user if available
+    this.checkAndSyncUserTheme();
   }
 
   private getInitialTheme(): ThemeMode {
@@ -49,17 +54,51 @@ export class ThemeService {
     return false;
   }
 
+  /**
+   * Sets the theme preference.
+   * Persists to localStorage for guests, and sends an update to MongoDB for authenticated users.
+   */
   setTheme(theme: ThemeMode): void {
     if (typeof localStorage !== 'undefined') {
       localStorage.setItem(this.THEME_KEY, theme);
     }
     this.currentThemeSubject.next(theme);
     this.applyTheme(theme);
+    this.persistToBackend(theme);
   }
 
   toggleTheme(): void {
     const nextTheme = this.isDarkSubject.value ? 'light' : 'dark';
     this.setTheme(nextTheme);
+  }
+
+  private persistToBackend(theme: ThemeMode): void {
+    try {
+      const userStr = (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('Loggedinuser')) ||
+                      (typeof localStorage !== 'undefined' && localStorage.getItem('currentUser'));
+      if (userStr) {
+        const user = JSON.parse(userStr);
+        const userId = user._id || user.email || user.googleId;
+        if (userId) {
+          this.http.put(`${API_BASE_URL}customer/${userId}/preferences`, { themePreference: theme }).subscribe({
+            next: () => {},
+            error: (err) => console.warn('Could not sync theme preference with backend:', err?.message)
+          });
+        }
+      }
+    } catch (e) {}
+  }
+
+  private checkAndSyncUserTheme(): void {
+    try {
+      const userStr = typeof sessionStorage !== 'undefined' && sessionStorage.getItem('Loggedinuser');
+      if (userStr) {
+        const user = JSON.parse(userStr);
+        if (user.themePreference && (user.themePreference === 'light' || user.themePreference === 'dark' || user.themePreference === 'system')) {
+          this.setTheme(user.themePreference);
+        }
+      }
+    } catch (e) {}
   }
 
   isDark(): boolean {

@@ -137,6 +137,85 @@ html.dark .mat-mdc-dialog-container .mdc-dialog__surface {
   color: var(--text-main) !important;
 }
 
+/* Material Datepicker Dark Mode Support */
+html.dark .mat-datepicker-content {
+  background-color: var(--bg-card) !important;
+  color: var(--text-main) !important;
+  border: 1px solid var(--border-subtle);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.6) !important;
+}
+
+html.dark .mat-calendar {
+  background-color: var(--bg-card) !important;
+  color: var(--text-main) !important;
+}
+
+html.dark .mat-calendar-body-cell-content {
+  color: var(--text-main) !important;
+}
+
+html.dark .mat-calendar-table-header th {
+  color: var(--text-muted) !important;
+}
+
+html.dark .mat-calendar-body-today:not(.mat-calendar-body-selected):not(.mat-calendar-body-comparison-identical) {
+  border-color: var(--brand-red) !important;
+}
+
+html.dark .mat-calendar-body-selected {
+  background-color: var(--brand-red) !important;
+  color: #ffffff !important;
+}
+
+html.dark .mat-calendar-arrow {
+  fill: var(--text-main) !important;
+}
+
+html.dark .mat-calendar-previous-button,
+html.dark .mat-calendar-next-button {
+  color: var(--text-main) !important;
+}
+
+/* Material Tooltip Dark Mode */
+html.dark .mat-mdc-tooltip .mdc-tooltip__surface {
+  background-color: #1e293b !important;
+  color: #f8fafc !important;
+  border: 1px solid var(--border-subtle);
+}
+
+/* Material Select Panel Dark Mode */
+html.dark .mat-mdc-select-panel {
+  background-color: var(--bg-card) !important;
+  color: var(--text-main) !important;
+  border: 1px solid var(--border-subtle);
+}
+
+html.dark .mat-mdc-option {
+  color: var(--text-main) !important;
+}
+
+html.dark .mat-mdc-option:hover,
+html.dark .mat-mdc-option.mat-mdc-option-active {
+  background-color: var(--bg-card-subtle) !important;
+}
+
+/* Form Tables Dark Mode */
+html.dark table {
+  background-color: var(--bg-card) !important;
+  color: var(--text-main) !important;
+}
+
+html.dark th {
+  background-color: var(--bg-card-subtle) !important;
+  color: var(--text-main) !important;
+  border-color: var(--border-subtle) !important;
+}
+
+html.dark td {
+  border-color: var(--border-subtle) !important;
+  color: var(--text-main) !important;
+}
+
 ::-webkit-scrollbar {
   background: transparent;
   width: 6px;
@@ -150,4 +229,5 @@ html.dark .mat-mdc-dialog-container .mdc-dialog__surface {
 html.dark ::-webkit-scrollbar-thumb {
   background: #334155;
 }
+
 

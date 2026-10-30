@@ -11,8 +11,10 @@ dns.setDefaultResultOrder('ipv4first');
 
 const app = require('./index');
 const Booking = require('./models/booking');
+const Customer = require('./models/customer');
 
 const results = {};
+
 
 function logResult(id, name, status, detail) {
   results[id] = { name, status, detail };
@@ -249,6 +251,43 @@ async function runTests() {
       logResult(10, "Bus Search Regression Test", "FAIL", `Status ${routeRes.statusCode}, valid data missing.`);
     }
 
+    // Test 11: Customer Preferences (Theme & Language) Persistence Test
+    console.log("\n--- Testing Customer Preferences & Theme Persistence ---");
+    let testCust = await Customer.create({
+      name: "Theme Test User",
+      email: `theme.test.${Date.now()}@tedbus.com`,
+      themePreference: "light"
+    });
+
+    const prefPayload = JSON.stringify({ themePreference: "dark", languagePreference: "hi" });
+    const prefRes = await makeRequest({
+      hostname: '127.0.0.1',
+      port: TEST_PORT,
+      path: `/customer/${testCust._id}/preferences`,
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(prefPayload),
+        'Origin': 'http://localhost:4200'
+      }
+    }, prefPayload);
+
+    const getRes = await makeRequest({
+      hostname: '127.0.0.1',
+      port: TEST_PORT,
+      path: `/customer/${testCust._id}`,
+      method: 'GET',
+      headers: { 'Origin': 'http://localhost:4200' }
+    });
+
+    await Customer.findByIdAndDelete(testCust._id);
+
+    if (prefRes.statusCode === 200 && prefRes.body.themePreference === 'dark' && getRes.statusCode === 200 && getRes.body.themePreference === 'dark') {
+      logResult(11, "Customer Theme Preference API Test", "PASS", "HTTP 200 PUT /customer/:id/preferences persisted dark theme and GET confirmed state.");
+    } else {
+      logResult(11, "Customer Theme Preference API Test", "FAIL", `PUT status: ${prefRes.statusCode}, GET status: ${getRes.statusCode}`);
+    }
+
     // Test 1: Angular production build (from earlier dist)
     const distPath = path.join(__dirname, '../frontend/dist/frontend/browser/index.html');
     if (fs.existsSync(distPath)) {
@@ -269,13 +308,14 @@ async function runTests() {
   console.log("\n=================================================");
   console.log("               FINAL TEST SUMMARY                ");
   console.log("=================================================");
-  for (let i = 1; i <= 10; i++) {
+  for (let i = 1; i <= 11; i++) {
     const t = results[i];
     if (t) {
       console.log(`${i}. [${t.status}] ${t.name}`);
     }
   }
 }
+
 
 function makeRequest(options, postData) {
   return new Promise((resolve, reject) => {
