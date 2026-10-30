@@ -401,6 +401,161 @@ async function runTests() {
       logResult(14, "Notification Retry Mechanism Test", "FAIL", `Status ${retryRes.statusCode}, body: ${JSON.stringify(retryRes.body)}`);
     }
 
+    // ─────────────────────────────────────────────────────────────────────────
+    // PHASE 5: Verified Journey Reviews
+    // ─────────────────────────────────────────────────────────────────────────
+    const { JourneyReview, ReviewReport } = require('./models/review');
+
+    // Test 15: Review Eligibility Check API
+    console.log("\n--- Test 15: Review Eligibility Check API ---");
+    // Create a test booking for eligibility check
+    const eligTestBooking = await Booking.create({
+      customerId: "elig-test-customer-123",
+      busId: "bus-elig-test",
+      seats: [20],
+      fare: 500,
+      status: "confirmed",
+      bookingDate: "2026-12-05",
+      email: "elig@tedbus.com",
+      phoneNumber: "9998887770",
+      departureDetails: { city: "Mumbai", time: 7, date: "2026-12-05" },
+      arrivalDetails: { city: "Pune", time: 9, date: "2026-12-05" }
+    });
+
+    const eligRes = await makeRequest({
+      hostname: '127.0.0.1',
+      port: TEST_PORT,
+      path: `/reviews/eligibility?customerId=elig-test-customer-123`,
+      method: 'GET',
+      headers: { 'Origin': 'http://localhost:4200' }
+    });
+
+    if (eligRes.statusCode === 200 && eligRes.body.eligible === true && eligRes.body.bookingId) {
+      logResult(15, "Review Eligibility Check API", "PASS", `HTTP 200, eligible=true, eligible bookingId=${eligRes.body.bookingId}`);
+    } else {
+      logResult(15, "Review Eligibility Check API", "FAIL", `Status ${eligRes.statusCode}, body: ${JSON.stringify(eligRes.body)}`);
+    }
+
+    // Test 16: Strict Booking Verification — Reject Review Without Valid Booking
+    console.log("\n--- Test 16: Strict Booking Verification — Reject Fake BookingId ---");
+    const fakeBookingId = new mongoose.Types.ObjectId().toString();
+    const fakeReviewPayload = JSON.stringify({
+      bookingId: fakeBookingId,
+      customerId: new mongoose.Types.ObjectId().toString(),
+      authorName: "Hacker User",
+      rating: 5,
+      reviewText: "This review should be rejected because the booking ID is fake.",
+      routeId: new mongoose.Types.ObjectId().toString()
+    });
+
+    const fakeRevRes = await makeRequest({
+      hostname: '127.0.0.1',
+      port: TEST_PORT,
+      path: '/reviews',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(fakeReviewPayload),
+        'Origin': 'http://localhost:4200'
+      }
+    }, fakeReviewPayload);
+
+    if (fakeRevRes.statusCode === 403 && fakeRevRes.body.error === 'BookingNotFound') {
+      logResult(16, "Strict Booking Verification (Fake BookingId Rejected)", "PASS", `HTTP 403 BookingNotFound — fake booking ID correctly rejected.`);
+    } else {
+      logResult(16, "Strict Booking Verification (Fake BookingId Rejected)", "FAIL", `Expected 403, got ${fakeRevRes.statusCode}: ${JSON.stringify(fakeRevRes.body)}`);
+    }
+
+    // Test 17: Verified Review Submission with Real Booking
+    console.log("\n--- Test 17: Submit Verified Review with Real Confirmed Booking ---");
+    const realReviewPayload = JSON.stringify({
+      bookingId: eligTestBooking._id.toString(),
+      customerId: "elig-test-customer-123",
+      authorName: "Verified Traveler",
+      rating: 4,
+      reviewText: "Excellent journey from Mumbai to Pune. Comfortable seats, punctual departure, smooth roads.",
+      routeId: new mongoose.Types.ObjectId().toString(),
+      busId: eligTestBooking.busId
+    });
+
+    const realRevRes = await makeRequest({
+      hostname: '127.0.0.1',
+      port: TEST_PORT,
+      path: '/reviews',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(realReviewPayload),
+        'Origin': 'http://localhost:4200'
+      }
+    }, realReviewPayload);
+
+    let createdReviewId = null;
+    if (realRevRes.statusCode === 201 && realRevRes.body._id && realRevRes.body.isVerifiedJourney === true && realRevRes.body.canEdit === true) {
+      createdReviewId = realRevRes.body._id;
+      logResult(17, "Verified Review Submission (Real Booking)", "PASS", `HTTP 201, reviewId=${createdReviewId}, isVerifiedJourney=true, canEdit=true (24h window open)`);
+    } else {
+      logResult(17, "Verified Review Submission (Real Booking)", "FAIL", `Status ${realRevRes.statusCode}, body: ${JSON.stringify(realRevRes.body)}`);
+    }
+
+    // Test 18: Review Report & 24-Hour Edit Window Enforcement
+    console.log("\n--- Test 18: Review Report API & 24-Hour Edit Window ---");
+    if (createdReviewId) {
+      // 18a: Submit a report on the review
+      const reportPayload = JSON.stringify({
+        reportedBy: new mongoose.Types.ObjectId().toString(),
+        reason: "spam",
+        description: "Test spam report for review system verification"
+      });
+
+      const reportRes = await makeRequest({
+        hostname: '127.0.0.1',
+        port: TEST_PORT,
+        path: `/reviews/${createdReviewId}/report`,
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(reportPayload),
+          'Origin': 'http://localhost:4200'
+        }
+      }, reportPayload);
+
+      // 18b: Edit review within 24h window
+      const editPayload = JSON.stringify({
+        customerId: "elig-test-customer-123",
+        rating: 5,
+        reviewText: "Updated: This journey was outstanding! Highly recommend TedBus for Mumbai to Pune route."
+      });
+
+      const editRes = await makeRequest({
+        hostname: '127.0.0.1',
+        port: TEST_PORT,
+        path: `/reviews/${createdReviewId}`,
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(editPayload),
+          'Origin': 'http://localhost:4200'
+        }
+      }, editPayload);
+
+      if (reportRes.statusCode === 201 && reportRes.body.success === true && editRes.statusCode === 200 && editRes.body.rating === 5 && editRes.body.canEdit === true) {
+        logResult(18, "Review Report API & 24-Hour Edit Window", "PASS", `Report HTTP 201 (reportId=${reportRes.body.reportId}); Edit HTTP 200 (rating updated to 5, canEdit=true within window).`);
+      } else {
+        logResult(18, "Review Report API & 24-Hour Edit Window", "FAIL",
+          `Report: ${reportRes.statusCode} ${JSON.stringify(reportRes.body)}; Edit: ${editRes.statusCode} ${JSON.stringify(editRes.body)}`);
+      }
+
+      // Cleanup: delete test review, booking, and report
+      await JourneyReview.findByIdAndDelete(createdReviewId).catch(() => {});
+      await ReviewReport.deleteMany({ reviewId: createdReviewId }).catch(() => {});
+    } else {
+      logResult(18, "Review Report API & 24-Hour Edit Window", "FAIL", "Skipped — no review was created in Test 17.");
+    }
+
+    // Cleanup test booking
+    await Booking.findByIdAndDelete(eligTestBooking._id).catch(() => {});
+
     // Test 1: Angular production build (from earlier dist)
     const distPath = path.join(__dirname, '../frontend/dist/frontend/browser/index.html');
     if (fs.existsSync(distPath)) {
@@ -421,13 +576,14 @@ async function runTests() {
   console.log("\n=================================================");
   console.log("               FINAL TEST SUMMARY                ");
   console.log("=================================================");
-  for (let i = 1; i <= 14; i++) {
+  for (let i = 1; i <= 18; i++) {
     const t = results[i];
     if (t) {
       console.log(`${i}. [${t.status}] ${t.name}`);
     }
   }
 }
+
 
 
 
