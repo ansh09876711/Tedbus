@@ -40,8 +40,17 @@ export class ProfilePageComponent implements OnInit {
     promotional: false
   };
 
+  filterUnreadOnly: boolean = false;
+
   get unreadCount(): number {
     return this.notifications.filter(n => !n.read).length;
+  }
+
+  get displayedNotifications(): UserNotification[] {
+    if (this.filterUnreadOnly) {
+      return this.notifications.filter(n => !n.read);
+    }
+    return this.notifications;
   }
 
   constructor(
@@ -49,6 +58,7 @@ export class ProfilePageComponent implements OnInit {
     public themeService: ThemeService,
     public translationService: TranslationService
   ) {}
+
 
   ngOnInit(): void {
     const sessionUser = sessionStorage.getItem('Loggedinuser');

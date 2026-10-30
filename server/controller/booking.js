@@ -1,5 +1,7 @@
 const Booking = require("../models/booking");
 const mongoose = require("mongoose");
+const { createAndDispatchNotification } = require("./notification");
+
 
 /**
  * Creates a new bus reservation with strict atomic integrity.
@@ -133,6 +135,22 @@ exports.addbooking = async (req, res) => {
     }
 
     console.log(`[Booking] Confirmed & persisted to database: ID=${savedBooking._id}`);
+
+    // Automatically trigger multi-channel notification for booking confirmation
+    try {
+      await createAndDispatchNotification({
+        customerId: savedBooking.customerId,
+        type: "booking_confirmed",
+        title: `Booking Confirmed #${savedBooking._id}`,
+        message: `Your journey from ${savedBooking.departureDetails?.city || 'Origin'} to ${savedBooking.arrivalDetails?.city || 'Destination'} is confirmed. Seat(s): ${savedBooking.seats.join(', ')}. Safe travels!`,
+        link: "/profile",
+        idempotencyKey: `booking_confirmed_${savedBooking._id}`,
+        meta: { email: savedBooking.email }
+      });
+    } catch (notifErr) {
+      console.warn("[Booking] Notice: Notification dispatch deferred:", notifErr.message);
+    }
+
     res.setHeader("X-Data-Source", "mongodb");
     return res.status(201).json(savedBooking);
 
@@ -182,8 +200,24 @@ exports.cancelBooking = async (req, res) => {
       });
     }
 
+    // Automatically trigger notification for booking cancellation
+    try {
+      await createAndDispatchNotification({
+        customerId: updated.customerId,
+        type: "booking_cancelled",
+        title: `Booking Cancelled #${updated._id}`,
+        message: `Your booking #${updated._id} from ${updated.departureDetails?.city || 'Origin'} to ${updated.arrivalDetails?.city || 'Destination'} has been cancelled. Automated refund processing initiated.`,
+        link: "/profile",
+        idempotencyKey: `booking_cancelled_${updated._id}`,
+        meta: { email: updated.email }
+      });
+    } catch (notifErr) {
+      console.warn("[Booking] Notice: Notification dispatch deferred:", notifErr.message);
+    }
+
     res.setHeader("X-Data-Source", "mongodb");
     res.json(updated);
+
   } catch (error) {
     console.error("[Booking] Error cancelling booking:", error);
     res.status(500).json({ error: "Failed to cancel booking" });

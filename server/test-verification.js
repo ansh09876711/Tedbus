@@ -12,8 +12,10 @@ dns.setDefaultResultOrder('ipv4first');
 const app = require('./index');
 const Booking = require('./models/booking');
 const Customer = require('./models/customer');
+const { Notification, NotificationDeliveryAttempt } = require('./models/notification');
 
 const results = {};
+
 
 
 function logResult(id, name, status, detail) {
@@ -325,6 +327,80 @@ async function runTests() {
       logResult(12, "Customer Language Preference API Test", "FAIL", `PUT status: ${langRes.statusCode}, GET status: ${getLangRes.statusCode}`);
     }
 
+    // Test 13: Notification Event Generation & Idempotency Test
+    console.log("\n--- Testing Notification Event Dispatching & Idempotency ---");
+    let notifCheckPass = false;
+    if (savedBookingId) {
+      const generatedNotif = await Notification.findOne({ idempotencyKey: `booking_confirmed_${savedBookingId}` }).lean().exec();
+      if (generatedNotif) {
+        const attempts = await NotificationDeliveryAttempt.find({ notificationId: generatedNotif._id }).lean().exec();
+        // Test idempotency: trigger same key again
+        const dupPayload = JSON.stringify({
+          customerId: "user-persist-test",
+          type: "booking_confirmed",
+          title: "Duplicate Test",
+          message: "Should be skipped",
+          idempotencyKey: `booking_confirmed_${savedBookingId}`
+        });
+        const dupRes = await makeRequest({
+          hostname: '127.0.0.1',
+          port: TEST_PORT,
+          path: '/notifications/trigger',
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Content-Length': Buffer.byteLength(dupPayload),
+            'Origin': 'http://localhost:4200'
+          }
+        }, dupPayload);
+
+        const countAfter = await Notification.countDocuments({ idempotencyKey: `booking_confirmed_${savedBookingId}` });
+        if (attempts.length > 0 && countAfter === 1) {
+          notifCheckPass = true;
+          logResult(13, "Notification Event Hook & Idempotency", "PASS", `Auto-generated booking notification #${generatedNotif._id} with ${attempts.length} channel attempts. Duplicate event suppressed.`);
+        }
+      }
+    }
+    if (!notifCheckPass) {
+      logResult(13, "Notification Event Hook & Idempotency", "FAIL", "Notification was not automatically generated or duplicate check failed.");
+    }
+
+    // Test 14: Failed Delivery Retry Mechanism Test
+    console.log("\n--- Testing Notification Delivery Retry Engine ---");
+    const testNotifDoc = await Notification.create({
+      customerId: "user-retry-test",
+      type: "system",
+      title: "Retry Test",
+      message: "Testing retry engine with exponential attempts",
+      read: false
+    });
+
+    const failedAttempt = await NotificationDeliveryAttempt.create({
+      notificationId: testNotifDoc._id,
+      channel: "email",
+      status: "failed",
+      attemptCount: 1,
+      errorMessage: "Simulated network timeout during SMTP handshake"
+    });
+
+    const retryRes = await makeRequest({
+      hostname: '127.0.0.1',
+      port: TEST_PORT,
+      path: '/notifications/retry-failed',
+      method: 'POST',
+      headers: { 'Origin': 'http://localhost:4200' }
+    });
+
+    const updatedAttempt = await NotificationDeliveryAttempt.findById(failedAttempt._id).lean().exec();
+    await Notification.findByIdAndDelete(testNotifDoc._id);
+    await NotificationDeliveryAttempt.findByIdAndDelete(failedAttempt._id);
+
+    if (retryRes.statusCode === 200 && retryRes.body.retriedCount >= 1 && updatedAttempt.status === 'delivered' && updatedAttempt.attemptCount === 2) {
+      logResult(14, "Notification Retry Mechanism Test", "PASS", `HTTP 200, retried failed delivery, attemptCount incremented to 2, status transitioned to delivered.`);
+    } else {
+      logResult(14, "Notification Retry Mechanism Test", "FAIL", `Status ${retryRes.statusCode}, body: ${JSON.stringify(retryRes.body)}`);
+    }
+
     // Test 1: Angular production build (from earlier dist)
     const distPath = path.join(__dirname, '../frontend/dist/frontend/browser/index.html');
     if (fs.existsSync(distPath)) {
@@ -345,13 +421,14 @@ async function runTests() {
   console.log("\n=================================================");
   console.log("               FINAL TEST SUMMARY                ");
   console.log("=================================================");
-  for (let i = 1; i <= 12; i++) {
+  for (let i = 1; i <= 14; i++) {
     const t = results[i];
     if (t) {
       console.log(`${i}. [${t.status}] ${t.name}`);
     }
   }
 }
+
 
 
 

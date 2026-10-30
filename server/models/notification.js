@@ -4,8 +4,7 @@ const Schema = mongoose.Schema;
 // User Notification Schema
 const notificationSchema = new Schema({
   customerId: {
-    type: Schema.Types.ObjectId,
-    ref: "Customers",
+    type: Schema.Types.Mixed,
     required: true,
     index: true,
   },
