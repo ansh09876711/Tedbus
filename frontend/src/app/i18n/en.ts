@@ -253,4 +253,23 @@ export const enTranslations: Record<string, string> = {
   'footer.globalSites': 'Global Sites',
   'footer.description': 'TedBus is a modern bus ticket booking application trusted by travelers across the nation. Enjoy fast, reliable, and convenient bus travel reservations with live tracking and seamless seat selection.',
   'footer.copyright': '© 2026 TedBus India Pvt. Ltd. All rights reserved.',
+
+  // Form Validation & System Errors
+  'validation.required': 'This field is required',
+  'validation.minReview': 'Review must be at least 20 characters long',
+  'validation.invalidEmail': 'Please enter a valid email address',
+  'validation.invalidPhone': 'Please enter a valid 10-digit mobile number',
+  'validation.selectSeats': 'Please select at least one seat to proceed',
+  'validation.seatConflict': 'Selected seat is already reserved by another traveler',
+  'errors.serverError': 'An unexpected error occurred. Please try again.',
+  'errors.databaseOffline': 'Booking service is temporarily offline. Please try again shortly.',
+
+  // Notification Template Localizations
+  'notif.bookingConfirmed.title': 'Booking Confirmed #{{bookingId}}',
+  'notif.bookingConfirmed.msg': 'Your journey from {{origin}} to {{destination}} is confirmed. Safe travels!',
+  'notif.bookingCancelled.title': 'Booking Cancelled #{{bookingId}}',
+  'notif.bookingCancelled.msg': 'Your booking for {{origin}} to {{destination}} has been cancelled. Automated refund initiated.',
+  'notif.departureReminder.title': 'Upcoming Journey Reminder',
+  'notif.departureReminder.msg': 'Your bus to {{destination}} departs at {{time}}. Please arrive 15 minutes before departure.',
 };
+

@@ -253,4 +253,23 @@ export const hiTranslations: Record<string, string> = {
   'footer.globalSites': 'वैश्विक साइटें',
   'footer.description': 'टेडबस एक आधुनिक बस टिकट बुकिंग एप्लिकेशन है जिस पर देश भर के यात्री भरोसा करते हैं। लाइव ट्रैकिंग और सीमलेस सीट चयन के साथ तेज़, विश्वसनीय और सुविधाजनक बस यात्रा आरक्षण का अनुभव करें।',
   'footer.copyright': '© 2026 टेडबस इंडिया प्रा. लि. सर्वाधिकार सुरक्षित।',
+
+  // Form Validation & System Errors
+  'validation.required': 'यह फ़ील्ड अनिवार्य है',
+  'validation.minReview': 'समीक्षा कम से कम 20 अक्षरों की होनी चाहिए',
+  'validation.invalidEmail': 'कृपया एक मान्य ईमेल पता दर्ज करें',
+  'validation.invalidPhone': 'कृपया एक मान्य 10-अंकीय मोबाइल नंबर दर्ज करें',
+  'validation.selectSeats': 'आगे बढ़ने के लिए कृपया कम से कम एक सीट चुनें',
+  'validation.seatConflict': 'चयनित सीट पहले से ही किसी अन्य यात्री द्वारा आरक्षित है',
+  'errors.serverError': 'एक अनपेक्षित त्रुटि हुई। कृपया पुनः प्रयास करें।',
+  'errors.databaseOffline': 'बुकिंग सेवा अस्थायी रूप से अनुपलब्ध है। कृपया थोड़ी देर बाद पुनः प्रयास करें।',
+
+  // Notification Template Localizations
+  'notif.bookingConfirmed.title': 'बुकिंग की पुष्टि #{{bookingId}}',
+  'notif.bookingConfirmed.msg': '{{origin}} से {{destination}} के लिए आपकी यात्रा की पुष्टि हो गई है। सुखद यात्रा!',
+  'notif.bookingCancelled.title': 'बुकिंग रद्द की गई #{{bookingId}}',
+  'notif.bookingCancelled.msg': '{{origin}} से {{destination}} के लिए आपकी बुकिंग रद्द कर दी गई है। स्वचालित रिफंड प्रक्रिया शुरू हो गई है।',
+  'notif.departureReminder.title': 'आगामी यात्रा अनुस्मारक',
+  'notif.departureReminder.msg': '{{destination}} के लिए आपकी बस {{time}} बजे रवाना होगी। कृपया प्रस्थान से 15 मिनट पहले पहुँचें।',
 };
+

@@ -288,6 +288,43 @@ async function runTests() {
       logResult(11, "Customer Theme Preference API Test", "FAIL", `PUT status: ${prefRes.statusCode}, GET status: ${getRes.statusCode}`);
     }
 
+    // Test 12: Customer Language Preference (i18n) Persistence Test
+    console.log("\n--- Testing Customer Language Preference & i18n Persistence ---");
+    let langCust = await Customer.create({
+      name: "Language Test User",
+      email: `lang.test.${Date.now()}@tedbus.com`,
+      languagePreference: "en"
+    });
+
+    const langPayload = JSON.stringify({ languagePreference: "hi" });
+    const langRes = await makeRequest({
+      hostname: '127.0.0.1',
+      port: TEST_PORT,
+      path: `/customer/${langCust._id}/preferences`,
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(langPayload),
+        'Origin': 'http://localhost:4200'
+      }
+    }, langPayload);
+
+    const getLangRes = await makeRequest({
+      hostname: '127.0.0.1',
+      port: TEST_PORT,
+      path: `/customer/${langCust._id}`,
+      method: 'GET',
+      headers: { 'Origin': 'http://localhost:4200' }
+    });
+
+    await Customer.findByIdAndDelete(langCust._id);
+
+    if (langRes.statusCode === 200 && langRes.body.languagePreference === 'hi' && getLangRes.statusCode === 200 && getLangRes.body.languagePreference === 'hi') {
+      logResult(12, "Customer Language Preference API Test", "PASS", "HTTP 200 PUT /customer/:id/preferences persisted Hindi language preference and GET confirmed state.");
+    } else {
+      logResult(12, "Customer Language Preference API Test", "FAIL", `PUT status: ${langRes.statusCode}, GET status: ${getLangRes.statusCode}`);
+    }
+
     // Test 1: Angular production build (from earlier dist)
     const distPath = path.join(__dirname, '../frontend/dist/frontend/browser/index.html');
     if (fs.existsSync(distPath)) {
@@ -308,13 +345,14 @@ async function runTests() {
   console.log("\n=================================================");
   console.log("               FINAL TEST SUMMARY                ");
   console.log("=================================================");
-  for (let i = 1; i <= 11; i++) {
+  for (let i = 1; i <= 12; i++) {
     const t = results[i];
     if (t) {
       console.log(`${i}. [${t.status}] ${t.name}`);
     }
   }
 }
+
 
 
 function makeRequest(options, postData) {
