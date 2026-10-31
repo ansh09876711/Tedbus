@@ -128,3 +128,23 @@
     flex-direction: column;
   }
 }
+
+:host-context(.dark) .mainContainer {
+  background: #0f172a;
+  border-color: #334155;
+}
+
+:host-context(.dark) .bus-interior,
+:host-context(.dark) .summary-card {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+:host-context(.dark) .summary-card h4 {
+  color: #f8fafc;
+}
+
+:host-context(.dark) .summary-line,
+:host-context(.dark) .seat-legend {
+  color: #cbd5e1;
+}

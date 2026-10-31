@@ -14,9 +14,11 @@ import { environment } from '../../../environments/environment';
 })
 export class NavbarComponent implements OnInit, AfterViewInit {
   isloggedIn: boolean = false;
+  loggedInUser: Customer | null = null;
   showAuthModal: boolean = false;
   loginName: string = '';
   loginEmail: string = '';
+  loginPassword: string = '';
   isSubmittingAuth: boolean = false;
   authErrorMessage: string = '';
 
@@ -29,6 +31,15 @@ export class NavbarComponent implements OnInit, AfterViewInit {
     public themeService: ThemeService,
     public translationService: TranslationService
   ) {}
+
+  get userInitial(): string {
+    const name = (this.loggedInUser?.name || this.loginName || '').trim();
+    return name ? name.charAt(0).toUpperCase() : 'U';
+  }
+
+  get userDisplayName(): string {
+    return (this.loggedInUser?.name || '').trim();
+  }
 
   get isDark(): boolean {
     return this.themeService.isDark();
@@ -54,13 +65,28 @@ export class NavbarComponent implements OnInit, AfterViewInit {
   }
 
   ngOnInit(): void {
-    if (sessionStorage.getItem("Loggedinuser")) {
-      this.isloggedIn = true;
-    } else {
-      this.isloggedIn = false;
-    }
-
+    this.syncLoggedInUserFromStorage();
     this.initGoogleAuth();
+  }
+
+  private syncLoggedInUserFromStorage(): void {
+    const rawUser = sessionStorage.getItem("Loggedinuser") || localStorage.getItem("currentUser");
+    if (rawUser) {
+      try {
+        const parsed = JSON.parse(rawUser);
+        if (parsed && (parsed.name || parsed.email || parsed._id)) {
+          this.loggedInUser = parsed;
+          this.isloggedIn = true;
+          this.loginName = parsed.name || '';
+          this.loginEmail = parsed.email || '';
+          return;
+        }
+      } catch {
+        // Ignore malformed storage entry
+      }
+    }
+    this.loggedInUser = null;
+    this.isloggedIn = false;
   }
 
   ngAfterViewInit(): void {
@@ -114,9 +140,24 @@ export class NavbarComponent implements OnInit, AfterViewInit {
     }
   }
 
-  handleDirectSignIn(name?: string, email?: string): void {
-    const finalName = (name || this.loginName || 'Traveler').trim();
-    const finalEmail = (email || this.loginEmail || 'traveler@tedbus.com').trim();
+  handleDirectSignIn(name?: string, email?: string, password?: string): void {
+    const finalName = (name ?? this.loginName ?? '').trim();
+    const finalEmail = (email ?? this.loginEmail ?? '').trim().toLowerCase();
+    const finalPassword = password ?? this.loginPassword ?? '';
+
+    if (!finalName || finalName.length < 2) {
+      this.authErrorMessage = 'Please enter your full name (at least 2 characters).';
+      return;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!finalEmail || !emailRegex.test(finalEmail)) {
+      this.authErrorMessage = 'Please enter a valid email address.';
+      return;
+    }
+    if (!finalPassword || finalPassword.length < 6) {
+      this.authErrorMessage = 'Please enter a password (at least 6 characters).';
+      return;
+    }
 
     this.isSubmittingAuth = true;
     this.authErrorMessage = '';
@@ -124,33 +165,27 @@ export class NavbarComponent implements OnInit, AfterViewInit {
     const payload = {
       name: finalName,
       email: finalEmail,
-      googleId: 'tedbus-' + Date.now(),
+      password: finalPassword,
       profilepicture: `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(finalName)}`
     };
 
     this.customerservice.addcustomermongo(payload).subscribe({
-      next: (res) => {
+      next: (res: Customer) => {
         sessionStorage.setItem("Loggedinuser", JSON.stringify(res));
+        if (res.authToken) {
+          sessionStorage.setItem("AuthToken", res.authToken);
+        }
+        this.loggedInUser = res;
         this.isloggedIn = true;
+        this.loginPassword = '';
         this.isSubmittingAuth = false;
         this.showAuthModal = false;
       },
       error: (err) => {
-        console.warn("Backend auth response fallback:", err);
-        sessionStorage.setItem("Loggedinuser", JSON.stringify(payload));
-        this.isloggedIn = true;
         this.isSubmittingAuth = false;
-        this.showAuthModal = false;
+        this.authErrorMessage = err?.error?.message || 'Invalid email or password. Please verify your credentials.';
       }
     });
-  }
-
-  /**
-   * Demo login has been disabled. Opens the standard auth modal instead.
-   * Personal developer credentials have been removed.
-   */
-  handleDemoLogin(): void {
-    this.openAuthModal();
   }
 
   private decodetoken(token: string) {
@@ -162,27 +197,25 @@ export class NavbarComponent implements OnInit, AfterViewInit {
   }
 
   handlelogin(response: any) {
-    const payload = this.decodetoken(response.credential);
+    const payload = this.decodetoken(response?.credential);
     if (!payload) return;
     this.customerservice.addcustomermongo(payload).subscribe({
-      next: (res) => {
-        console.log('POST success', res);
+      next: (res: Customer) => {
+        if (!res || !res.authToken) {
+          this.authErrorMessage = 'Google sign-in requires a verified account password on this server.';
+          return;
+        }
         sessionStorage.setItem("Loggedinuser", JSON.stringify(res));
+        sessionStorage.setItem("AuthToken", res.authToken);
+        this.loggedInUser = res;
+        this.loginName = res.name || payload.name || '';
+        this.loginEmail = res.email || payload.email || '';
         this.isloggedIn = true;
         this.showAuthModal = false;
       },
       error: (error) => {
-        console.error('Post request failed', error);
-        // Fallback store decoded token payload so user is never locked out
-        const fallbackUser = {
-          name: payload.name,
-          email: payload.email,
-          googleId: payload.sub,
-          profilePicture: payload.picture
-        };
-        sessionStorage.setItem("Loggedinuser", JSON.stringify(fallbackUser));
-        this.isloggedIn = true;
-        this.showAuthModal = false;
+        console.warn('Google sign-in rejected by backend:', error?.error?.message || error?.message);
+        this.authErrorMessage = error?.error?.message || 'Please sign in using your email and password.';
       }
     });
   }
@@ -194,6 +227,12 @@ export class NavbarComponent implements OnInit, AfterViewInit {
       }
     } catch (e) {}
     sessionStorage.removeItem('Loggedinuser');
+    sessionStorage.removeItem('AuthToken');
+    localStorage.removeItem('currentUser');
+    this.loggedInUser = null;
+    this.loginName = '';
+    this.loginEmail = '';
+    this.loginPassword = '';
     this.isloggedIn = false;
     this.router.navigate(['/']);
   }

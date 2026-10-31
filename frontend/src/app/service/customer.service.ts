@@ -13,9 +13,10 @@ export class CustomerService {
   constructor(private http: HttpClient) { }
 
   addcustomermongo(user: any): Observable<Customer> {
-    const customer: Customer = {
+    const customer: any = {
       name: user.name,
       email: user.email,
+      password: user.password,
       googleId: user.id || user.googleId,
       profilepicture: user.picture || user.profilepicture || user.profilePicture
     };

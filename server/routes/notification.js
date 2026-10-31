@@ -10,6 +10,7 @@ router.put("/notifications/preferences/:customerId", notificationController.upda
 router.post("/notifications/retry-failed", notificationController.retryFailedDeliveries);
 router.get("/notifications/delivery-history", notificationController.getDeliveryHistory);
 router.post("/notifications/trigger", notificationController.triggerNotification);
+router.get("/notifications/config-status", notificationController.getConfigStatus);
 
 module.exports = router;
 

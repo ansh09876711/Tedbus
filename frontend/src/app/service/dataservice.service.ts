@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { BehaviorSubject } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
@@ -9,17 +9,10 @@ export class DataserviceService {
   currentdata = this.datasource.asObservable();
   currentData = this.datasource.asObservable();
 
-  private passdetails = new BehaviorSubject<any>(null);
-  passdata = this.passdetails.asObservable();
-
   constructor() { }
 
   sendobj(obj: any) {
     this.datasource.next(obj);
-  }
-
-  passobj(obj: any) {
-    this.passdetails.next(obj);
   }
 
   setData(obj: any) {
@@ -31,6 +24,5 @@ export class DataserviceService {
   }
 }
 
-// Alias for convenience
 export const DataService = DataserviceService;
 export type DataService = DataserviceService;

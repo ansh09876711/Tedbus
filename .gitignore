@@ -93,3 +93,6 @@ powershell.cmd
 fix_angular_json.py
 console.log*
 {
+*.pem
+*.key
+.tedbus_backup*

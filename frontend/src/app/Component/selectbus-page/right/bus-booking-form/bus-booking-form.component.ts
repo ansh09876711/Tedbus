@@ -1,5 +1,6 @@
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
-import { Router } from '@angular/router';
+import { Component, EventEmitter, Input, OnChanges, OnDestroy, OnInit, Output, SimpleChanges } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { DataService } from '../../../../service/dataservice.service';
 
 interface Passenger {
@@ -14,7 +15,7 @@ interface Passenger {
   templateUrl: './bus-booking-form.component.html',
   styleUrl: './bus-booking-form.component.css'
 })
-export class BusBookingFormComponent implements OnInit {
+export class BusBookingFormComponent implements OnInit, OnChanges, OnDestroy {
   @Input() selectedseat: number[] = [];
   @Input() seatprice: number = 0;
   @Input() busid: string | undefined = '';
@@ -27,15 +28,30 @@ export class BusBookingFormComponent implements OnInit {
   passengers: Passenger[] = [];
   email: string = '';
   phoneNumber: string = '';
+  selectedJourneyDate: string = '';
+  private querySub?: Subscription;
 
-  constructor(private router: Router, private dataService: DataService) {}
+  constructor(
+    private router: Router,
+    private route: ActivatedRoute,
+    private dataService: DataService
+  ) {}
 
   ngOnInit(): void {
+    this.querySub = this.route.queryParams.subscribe(params => {
+      if (params['date']) {
+        this.selectedJourneyDate = String(params['date']).trim();
+      }
+    });
     this.updatePassengerList();
   }
 
-  ngOnChanges(): void {
+  ngOnChanges(_changes: SimpleChanges): void {
     this.updatePassengerList();
+  }
+
+  ngOnDestroy(): void {
+    this.querySub?.unsubscribe();
   }
 
   updatePassengerList(): void {
@@ -68,6 +84,12 @@ export class BusBookingFormComponent implements OnInit {
       }
     }
 
+    const journeyDate =
+      this.selectedJourneyDate ||
+      this.route.snapshot.queryParamMap.get('date') ||
+      this.routedetails?.date ||
+      new Date().toISOString().split('T')[0];
+
     const bookingPayload = {
       busId: this.busid,
       operatorName: this.operatorname,
@@ -80,7 +102,8 @@ export class BusBookingFormComponent implements OnInit {
       passengers: this.passengers,
       email: this.email,
       phoneNumber: this.phoneNumber,
-      date: new Date().toISOString().split('T')[0]
+      date: journeyDate,
+      bookingDate: journeyDate
     };
 
     // Store in data service / localStorage for payment page

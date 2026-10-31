@@ -1,18 +1,20 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-header',
   templateUrl: './header.component.html',
   styleUrl: './header.component.css'
 })
-export class HeaderComponent implements OnInit {
+export class HeaderComponent implements OnInit, OnDestroy {
   departure: string = '';
   arrival: string = '';
   date: string = '';
   displayDate: string = '';
   dayOfWeek: string = '';
   showModifySearch: boolean = false;
+  private querySub?: Subscription;
 
   // Editable fields for modify search
   editDeparture: string = '';
@@ -22,7 +24,7 @@ export class HeaderComponent implements OnInit {
   constructor(private route: ActivatedRoute, private router: Router) {}
 
   ngOnInit(): void {
-    this.route.queryParams.subscribe(params => {
+    this.querySub = this.route.queryParams.subscribe(params => {
       this.departure = params['departure'] || '';
       this.arrival = params['arrival'] || '';
       this.date = params['date'] || '';
@@ -31,6 +33,10 @@ export class HeaderComponent implements OnInit {
       this.editArrival = this.arrival;
       this.editDate = this.date;
     });
+  }
+
+  ngOnDestroy(): void {
+    this.querySub?.unsubscribe();
   }
 
   formatDate(): void {

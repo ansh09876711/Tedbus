@@ -1,4 +1,19 @@
 <div class="community-page max-w-5xl mx-auto py-8 px-4">
+  <!-- Toast Feedback Banner -->
+  <div *ngIf="feedbackBanner"
+       [ngClass]="feedbackBanner.type === 'success' ? 'bg-green-50 dark:bg-green-950/80 border-green-300 dark:border-green-800 text-green-800 dark:text-green-200' : 'bg-red-50 dark:bg-red-950/80 border-red-300 dark:border-red-800 text-red-800 dark:text-red-200'"
+       class="mb-4 px-4 py-3 rounded-xl border flex items-center justify-between text-xs font-semibold shadow-sm transition-all">
+    <div class="flex items-center gap-2">
+      <mat-icon style="font-size: 18px; width: 18px; height: 18px;">
+        {{ feedbackBanner.type === 'success' ? 'check_circle' : 'error_outline' }}
+      </mat-icon>
+      <span>{{ feedbackBanner.message }}</span>
+    </div>
+    <button (click)="feedbackBanner = null" class="opacity-70 hover:opacity-100">
+      <mat-icon style="font-size: 16px; width: 16px; height: 16px;">close</mat-icon>
+    </button>
+  </div>
+
   <!-- Community Header -->
   <div class="bg-gradient-to-r from-red-600 to-rose-700 rounded-2xl p-6 md:p-8 text-white shadow-xl mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
     <div>
@@ -10,10 +25,101 @@
       <h1 class="text-2xl md:text-3xl font-black tracking-tight">{{ 'community.title' | translate }}</h1>
       <p class="text-red-100 text-sm mt-1 max-w-xl">{{ 'community.subtitle' | translate }}</p>
     </div>
-    <button (click)="openNewPostModal()" class="px-5 py-2.5 bg-white text-red-600 hover:bg-red-50 font-bold rounded-xl shadow-md transition-all flex items-center gap-2 text-sm shrink-0">
-      <mat-icon style="font-size: 20px; width: 20px; height: 20px;">add_circle</mat-icon>
-      <span>{{ 'community.createPost' | translate }}</span>
-    </button>
+    <div class="flex flex-wrap items-center gap-2.5 shrink-0">
+      <button (click)="toggleModeratorPanel()"
+              class="px-4 py-2.5 bg-white/15 hover:bg-white/25 text-white border border-white/30 font-semibold rounded-xl transition-all flex items-center gap-1.5 text-xs cursor-pointer">
+        <mat-icon style="font-size: 18px; width: 18px; height: 18px;">admin_panel_settings</mat-icon>
+        <span>{{ 'community.moderationQueue' | translate }}</span>
+      </button>
+      <button (click)="openNewPostModal()"
+              class="px-5 py-2.5 bg-white text-red-600 hover:bg-red-50 font-bold rounded-xl shadow-md transition-all flex items-center gap-2 text-sm cursor-pointer">
+        <mat-icon style="font-size: 20px; width: 20px; height: 20px;">add_circle</mat-icon>
+        <span>{{ 'community.createPost' | translate }}</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Moderator Dashboard Panel -->
+  <div *ngIf="showModeratorPanel" class="mb-8 bg-white dark:bg-slate-800/95 rounded-2xl border-2 border-amber-400/70 dark:border-amber-600/60 p-6 shadow-lg">
+    <div class="flex items-center justify-between pb-4 mb-4 border-b border-gray-200 dark:border-slate-700">
+      <div class="flex items-center gap-2.5">
+        <mat-icon class="text-amber-500">shield</mat-icon>
+        <div>
+          <h3 class="text-base font-bold text-gray-900 dark:text-white">Community Trust &amp; Safety Moderation Dashboard</h3>
+          <p class="text-xs text-gray-500 dark:text-gray-400">Review flagged posts and comments, hide policy-violating content, or restore false positives.</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <button (click)="loadModerationReports()" class="px-3 py-1.5 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 text-xs font-semibold rounded-lg text-gray-700 dark:text-gray-200 flex items-center gap-1 cursor-pointer">
+          <mat-icon style="font-size: 15px; width: 15px; height: 15px;">refresh</mat-icon>
+          Refresh
+        </button>
+        <button (click)="showModeratorPanel = false" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+    </div>
+
+    <div *ngIf="loadingReports" class="py-6 text-center text-xs text-gray-400">
+      Loading moderation queue...
+    </div>
+
+    <div *ngIf="!loadingReports && moderationReports.length === 0" class="py-6 text-center text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-slate-900/50 rounded-xl">
+      <mat-icon class="text-green-500 mb-1">verified_user</mat-icon>
+      <p class="font-semibold">All clear! No flagged content in the moderation queue.</p>
+    </div>
+
+    <div *ngIf="!loadingReports && moderationReports.length > 0" class="space-y-3 mb-6">
+      <div *ngFor="let rep of moderationReports" class="p-4 rounded-xl bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 text-xs">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+          <div class="flex items-center gap-2">
+            <span class="px-2 py-0.5 rounded font-bold uppercase text-[10px]"
+                  [ngClass]="rep.status === 'pending' ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300' : 'bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300'">
+              {{ rep.status }}
+            </span>
+            <span class="px-2 py-0.5 bg-red-100 dark:bg-red-950/60 text-red-700 dark:text-red-300 rounded font-semibold uppercase text-[10px]">
+              {{ rep.targetType }} • Reason: {{ rep.reason }}
+            </span>
+            <span class="text-gray-400">{{ rep.createdAt | date:'short' }}</span>
+          </div>
+          <span *ngIf="rep.targetSummary?.isHidden" class="px-2 py-0.5 bg-gray-800 text-white rounded text-[10px] font-bold">
+            CURRENTLY HIDDEN
+          </span>
+        </div>
+
+        <div *ngIf="rep.targetSummary" class="p-3 rounded-lg bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 mb-3">
+          <div class="font-bold text-gray-800 dark:text-gray-200">{{ rep.targetSummary.title }} <span class="font-normal text-gray-400">by {{ rep.targetSummary.authorName }}</span></div>
+          <p class="text-gray-600 dark:text-gray-300 mt-1 line-clamp-2">{{ rep.targetSummary.content }}</p>
+        </div>
+
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+          <input type="text" [(ngModel)]="moderationReasonInput[rep._id]" placeholder="Moderation audit note (optional)..."
+                 class="flex-1 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-800 dark:text-white text-xs outline-none focus:border-red-500">
+          <div class="flex items-center gap-2">
+            <button (click)="executeModeration(rep, 'hide')" class="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-lg transition cursor-pointer">
+              Hide
+            </button>
+            <button (click)="executeModeration(rep, 'restore')" class="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition cursor-pointer">
+              Restore
+            </button>
+            <button (click)="executeModeration(rep, 'delete')" class="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg transition cursor-pointer">
+              Delete
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Audit Log -->
+    <div *ngIf="moderationLog.length > 0" class="pt-4 border-t border-gray-200 dark:border-slate-700">
+      <h4 class="text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Recent Moderation Audit Log ({{ moderationLog.length }})</h4>
+      <div class="space-y-1.5 max-h-40 overflow-y-auto">
+        <div *ngFor="let log of moderationLog" class="flex items-center justify-between text-[11px] text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-slate-900/60 px-3 py-1.5 rounded-lg">
+          <span><strong class="uppercase text-red-600 dark:text-red-400">{{ log.actionType }}</strong> on {{ log.targetType }} ({{ log.reason }})</span>
+          <span class="text-gray-400">{{ log.createdAt | date:'short' }}</span>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- Filter & Sort Bar -->
@@ -22,27 +128,32 @@
     <div class="flex items-center gap-2 overflow-x-auto w-full sm:w-auto pb-2 sm:pb-0">
       <button (click)="setCategory('all')" 
               [ngClass]="selectedCategory === 'all' ? 'bg-red-600 text-white font-bold' : 'bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-700'"
-              class="px-3.5 py-1.5 rounded-full text-xs transition-colors shrink-0">
+              class="px-3.5 py-1.5 rounded-full text-xs transition-colors shrink-0 cursor-pointer">
         {{ 'community.allPosts' | translate }}
       </button>
       <button (click)="setCategory('tips')" 
               [ngClass]="selectedCategory === 'tips' ? 'bg-red-600 text-white font-bold' : 'bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-700'"
-              class="px-3.5 py-1.5 rounded-full text-xs transition-colors shrink-0">
+              class="px-3.5 py-1.5 rounded-full text-xs transition-colors shrink-0 cursor-pointer">
         {{ 'community.tips' | translate }}
       </button>
       <button (click)="setCategory('experiences')" 
               [ngClass]="selectedCategory === 'experiences' ? 'bg-red-600 text-white font-bold' : 'bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-700'"
-              class="px-3.5 py-1.5 rounded-full text-xs transition-colors shrink-0">
+              class="px-3.5 py-1.5 rounded-full text-xs transition-colors shrink-0 cursor-pointer">
         {{ 'community.experiences' | translate }}
       </button>
       <button (click)="setCategory('safety')" 
               [ngClass]="selectedCategory === 'safety' ? 'bg-red-600 text-white font-bold' : 'bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-700'"
-              class="px-3.5 py-1.5 rounded-full text-xs transition-colors shrink-0">
+              class="px-3.5 py-1.5 rounded-full text-xs transition-colors shrink-0 cursor-pointer">
         {{ 'community.safety' | translate }}
+      </button>
+      <button (click)="setCategory('routes')" 
+              [ngClass]="selectedCategory === 'routes' ? 'bg-red-600 text-white font-bold' : 'bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-700'"
+              class="px-3.5 py-1.5 rounded-full text-xs transition-colors shrink-0 cursor-pointer">
+        Bus Routes
       </button>
       <button (click)="setCategory('general')" 
               [ngClass]="selectedCategory === 'general' ? 'bg-red-600 text-white font-bold' : 'bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-700'"
-              class="px-3.5 py-1.5 rounded-full text-xs transition-colors shrink-0">
+              class="px-3.5 py-1.5 rounded-full text-xs transition-colors shrink-0 cursor-pointer">
         {{ 'community.general' | translate }}
       </button>
     </div>
@@ -50,11 +161,11 @@
     <!-- Sorting -->
     <div class="flex items-center gap-2 self-end sm:self-auto text-xs">
       <span class="text-gray-400">Sort:</span>
-      <button (click)="setSort('recent')" [class.font-bold]="sortBy === 'recent'" [class.text-red-600]="sortBy === 'recent'" class="hover:underline text-gray-600 dark:text-gray-300">
+      <button (click)="setSort('recent')" [class.font-bold]="sortBy === 'recent'" [class.text-red-600]="sortBy === 'recent'" class="hover:underline text-gray-600 dark:text-gray-300 cursor-pointer">
         Recent
       </button>
       <span class="text-gray-300">|</span>
-      <button (click)="setSort('popular')" [class.font-bold]="sortBy === 'popular'" [class.text-red-600]="sortBy === 'popular'" class="hover:underline text-gray-600 dark:text-gray-300">
+      <button (click)="setSort('popular')" [class.font-bold]="sortBy === 'popular'" [class.text-red-600]="sortBy === 'popular'" class="hover:underline text-gray-600 dark:text-gray-300 cursor-pointer">
         Popular
       </button>
     </div>
@@ -71,7 +182,7 @@
     <mat-icon class="text-gray-300 dark:text-slate-600" style="font-size: 56px; width: 56px; height: 56px;">forum</mat-icon>
     <h3 class="text-lg font-bold text-gray-700 dark:text-gray-200 mt-2">No Stories in This Category Yet</h3>
     <p class="text-sm text-gray-500 dark:text-gray-400 mt-1 mb-4">Be the first verified traveler to share an experience or route tip!</p>
-    <button (click)="openNewPostModal()" class="px-5 py-2 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 text-sm">
+    <button (click)="openNewPostModal()" class="px-5 py-2 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 text-sm cursor-pointer">
       {{ 'community.createPost' | translate }}
     </button>
   </div>
@@ -88,8 +199,9 @@
           <div>
             <div class="flex items-center gap-1.5">
               <strong class="text-sm text-gray-900 dark:text-white font-bold">{{ post.authorName }}</strong>
-              <span *ngIf="post.isAuthorVerified" class="text-blue-500" title="Verified Traveler">
-                <mat-icon style="font-size: 16px; width: 16px; height: 16px;">verified</mat-icon>
+              <span *ngIf="post.isAuthorVerified" class="inline-flex items-center gap-0.5 text-blue-500 bg-blue-50 dark:bg-blue-950/50 px-2 py-0.5 rounded-full text-[10px] font-semibold" title="Verified Traveler">
+                <mat-icon style="font-size: 13px; width: 13px; height: 13px;">verified</mat-icon>
+                <span>{{ 'community.verifiedTraveler' | translate }}</span>
               </span>
             </div>
             <span class="text-xs text-gray-400 block">{{ post.createdAt | date:'mediumDate' }}</span>
@@ -111,22 +223,117 @@
 
       <!-- Actions Footer -->
       <div class="flex justify-between items-center pt-3 border-t border-gray-100 dark:border-slate-800 text-xs text-gray-500 dark:text-gray-400">
-        <div class="flex items-center gap-4">
-          <button (click)="toggleLike(post)" class="flex items-center gap-1.5 hover:text-red-600 transition-colors" [class.text-red-600]="post.isLiked">
+        <div class="flex items-center gap-5">
+          <button (click)="toggleLike(post)" class="flex items-center gap-1.5 hover:text-red-600 transition-colors cursor-pointer" [class.text-red-600]="post.isLiked">
             <mat-icon style="font-size: 18px; width: 18px; height: 18px;">{{ post.isLiked ? 'favorite' : 'favorite_border' }}</mat-icon>
             <span>{{ post.likes ? post.likes.length : 0 }} {{ 'community.like' | translate }}</span>
           </button>
-          <button (click)="copyShareLink(post)" class="flex items-center gap-1.5 hover:text-red-600 transition-colors">
+
+          <button (click)="toggleComments(post)" class="flex items-center gap-1.5 hover:text-red-600 transition-colors cursor-pointer" [class.text-red-600]="post.showComments">
+            <mat-icon style="font-size: 18px; width: 18px; height: 18px;">chat_bubble_outline</mat-icon>
+            <span>{{ post.commentsCount || (post.comments ? post.comments.length : 0) }} {{ 'community.comment' | translate }}</span>
+          </button>
+
+          <button (click)="copyShareLink(post)" class="flex items-center gap-1.5 hover:text-red-600 transition-colors cursor-pointer">
             <mat-icon style="font-size: 18px; width: 18px; height: 18px;">share</mat-icon>
             <span>{{ 'community.share' | translate }}</span>
           </button>
         </div>
-        <button (click)="reportPost(post)" class="flex items-center gap-1 hover:text-red-600 transition-colors text-xs text-gray-400">
+        <button (click)="openReportModal('post', post._id, post.title)" class="flex items-center gap-1 hover:text-red-600 transition-colors text-xs text-gray-400 cursor-pointer">
           <mat-icon style="font-size: 14px; width: 14px; height: 14px;">flag</mat-icon>
           <span>{{ 'community.report' | translate }}</span>
         </button>
       </div>
+
+      <!-- Expandable Comments & Replies Section -->
+      <div *ngIf="post.showComments" class="mt-4 pt-4 border-t border-gray-100 dark:border-slate-800 space-y-4">
+        <div *ngIf="post.loadingComments" class="text-xs text-gray-400 py-2">
+          Loading discussion...
+        </div>
+
+        <!-- Existing Top-Level Comments & Nested Replies -->
+        <div *ngIf="!post.loadingComments && post.comments && post.comments.length > 0" class="space-y-3">
+          <div *ngFor="let cmt of getTopLevelComments(post)" class="bg-gray-50 dark:bg-slate-900/70 rounded-xl p-3.5 border border-gray-100 dark:border-slate-800">
+            <div class="flex items-start justify-between gap-2">
+              <div class="flex items-center gap-2">
+                <img [src]="cmt.authorPicture || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80'"
+                     [alt]="cmt.authorName"
+                     class="w-7 h-7 rounded-full object-cover">
+                <div>
+                  <div class="flex items-center gap-1">
+                    <span class="text-xs font-bold text-gray-900 dark:text-white">{{ cmt.authorName }}</span>
+                    <mat-icon *ngIf="cmt.isAuthorVerified !== false" class="text-blue-500" style="font-size: 13px; width: 13px; height: 13px;">verified</mat-icon>
+                  </div>
+                  <span class="text-[10px] text-gray-400">{{ cmt.createdAt | date:'short' }}</span>
+                </div>
+              </div>
+              <div class="flex items-center gap-3 text-[11px] text-gray-400">
+                <button (click)="setReplyTarget(post, cmt)" class="hover:text-red-600 font-semibold flex items-center gap-0.5 cursor-pointer">
+                  <mat-icon style="font-size: 13px; width: 13px; height: 13px;">reply</mat-icon>
+                  {{ 'community.reply' | translate }}
+                </button>
+                <button (click)="openReportModal('comment', cmt._id, cmt.text)" class="hover:text-red-600 cursor-pointer" title="Report comment">
+                  <mat-icon style="font-size: 13px; width: 13px; height: 13px;">flag</mat-icon>
+                </button>
+              </div>
+            </div>
+            <p class="text-xs text-gray-700 dark:text-gray-300 mt-2 pl-9">{{ cmt.text }}</p>
+
+            <!-- Threaded Replies -->
+            <div *ngIf="getReplies(post, cmt._id).length > 0" class="mt-3 ml-8 pl-3 border-l-2 border-red-200 dark:border-slate-700 space-y-2.5">
+              <div *ngFor="let rep of getReplies(post, cmt._id)" class="bg-white dark:bg-slate-800/80 rounded-lg p-2.5 text-xs">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-1.5">
+                    <img [src]="rep.authorPicture || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80'"
+                         [alt]="rep.authorName"
+                         class="w-5 h-5 rounded-full object-cover">
+                    <strong class="text-gray-900 dark:text-white text-[11px]">{{ rep.authorName }}</strong>
+                    <mat-icon *ngIf="rep.isAuthorVerified !== false" class="text-blue-500" style="font-size: 12px; width: 12px; height: 12px;">verified</mat-icon>
+                    <span class="text-[10px] text-gray-400">• {{ rep.createdAt | date:'short' }}</span>
+                  </div>
+                  <button (click)="openReportModal('comment', rep._id, rep.text)" class="text-gray-400 hover:text-red-600 cursor-pointer" title="Report reply">
+                    <mat-icon style="font-size: 12px; width: 12px; height: 12px;">flag</mat-icon>
+                  </button>
+                </div>
+                <p class="text-gray-600 dark:text-gray-300 mt-1 pl-6 text-xs">{{ rep.text }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div *ngIf="!post.loadingComments && (!post.comments || post.comments.length === 0)" class="text-xs text-gray-400 italic">
+          No comments yet. Start the conversation below!
+        </div>
+
+        <!-- Active Reply Banner -->
+        <div *ngIf="activeReplyTo[post._id]" class="flex items-center justify-between bg-red-50 dark:bg-red-950/30 px-3 py-1.5 rounded-lg text-xs text-red-700 dark:text-red-300">
+          <span>Replying to <strong>{{ activeReplyTo[post._id]?.authorName }}</strong></span>
+          <button (click)="cancelReplyTarget(post)" class="hover:underline font-semibold cursor-pointer">Cancel</button>
+        </div>
+
+        <!-- Add Comment / Reply Input -->
+        <div class="flex gap-2">
+          <input type="text"
+                 [(ngModel)]="newCommentText[post._id]"
+                 (keyup.enter)="submitComment(post)"
+                 [placeholder]="activeReplyTo[post._id] ? ('Reply to ' + activeReplyTo[post._id]?.authorName + '...') : ('community.writeComment' | translate)"
+                 class="flex-1 px-3.5 py-2 rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 text-gray-900 dark:text-white text-xs outline-none focus:border-red-500">
+          <button (click)="submitComment(post)"
+                  [disabled]="submittingCommentForPost[post._id]"
+                  class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl text-xs transition shrink-0 cursor-pointer disabled:opacity-50">
+            {{ submittingCommentForPost[post._id] ? '...' : ('community.postComment' | translate) }}
+          </button>
+        </div>
+      </div>
     </article>
+
+    <!-- Load More Pagination Button -->
+    <div *ngIf="hasMorePosts" class="text-center pt-4">
+      <button (click)="loadMorePosts()" [disabled]="loadingMore"
+              class="px-6 py-2.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 hover:border-red-500 text-gray-700 dark:text-gray-200 font-semibold rounded-xl text-xs shadow-xs transition cursor-pointer">
+        {{ loadingMore ? 'Loading more stories...' : ('community.loadMore' | translate) }}
+      </button>
+    </div>
   </div>
 
   <!-- New Post Modal -->
@@ -137,9 +344,13 @@
           <mat-icon class="text-red-600">post_add</mat-icon>
           <span>{{ 'community.createPost' | translate }}</span>
         </h3>
-        <button (click)="closeNewPostModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+        <button (click)="closeNewPostModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer">
           <mat-icon>close</mat-icon>
         </button>
+      </div>
+
+      <div *ngIf="postFormError" class="mb-4 p-3 rounded-xl bg-red-50 dark:bg-red-950/60 border border-red-200 dark:border-red-800 text-xs text-red-700 dark:text-red-300">
+        {{ postFormError }}
       </div>
 
       <div class="space-y-4">
@@ -173,12 +384,59 @@
         </div>
 
         <div class="flex justify-end gap-3 pt-4 border-t border-gray-100 dark:border-slate-800">
-          <button (click)="closeNewPostModal()" class="px-5 py-2.5 border border-gray-300 dark:border-slate-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-800 text-sm font-medium">
+          <button (click)="closeNewPostModal()" class="px-5 py-2.5 border border-gray-300 dark:border-slate-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-800 text-sm font-medium cursor-pointer">
             Cancel
           </button>
-          <button (click)="submitNewPost()" [disabled]="isSubmitting" class="px-6 py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl shadow-md text-sm transition-colors flex items-center gap-1.5">
+          <button (click)="submitNewPost()" [disabled]="isSubmitting" class="px-6 py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl shadow-md text-sm transition-colors flex items-center gap-1.5 cursor-pointer">
             <span *ngIf="!isSubmitting">{{ 'community.publish' | translate }}</span>
             <span *ngIf="isSubmitting">Publishing...</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Report Content Modal -->
+  <div *ngIf="showReportModal" class="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+    <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl p-6 max-w-md w-full border border-gray-100 dark:border-slate-800">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
+          <mat-icon class="text-red-600">flag</mat-icon>
+          <span>Report {{ reportTargetType === 'post' ? 'Community Post' : 'Comment' }}</span>
+        </h3>
+        <button (click)="closeReportModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+
+      <p class="text-xs text-gray-500 dark:text-gray-400 mb-4 line-clamp-2">
+        Flagging: "{{ reportTargetTitle }}"
+      </p>
+
+      <div class="space-y-3">
+        <div>
+          <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Reason for Reporting *</label>
+          <select [(ngModel)]="reportReason" class="w-full px-3.5 py-2 border rounded-xl text-xs bg-gray-50 dark:bg-slate-800 text-gray-900 dark:text-white border-gray-200 dark:border-slate-700">
+            <option value="spam">Spam or Promotional Solicitation</option>
+            <option value="misinformation">Misleading Route / Safety Information</option>
+            <option value="offensive">Offensive or Disrespectful Language</option>
+            <option value="harassment">Harassment</option>
+            <option value="other">Other Policy Violation</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Additional Context (Optional)</label>
+          <textarea [(ngModel)]="reportDescription" rows="3" placeholder="Provide brief details for our moderation team..."
+                    class="w-full px-3.5 py-2 border rounded-xl text-xs bg-gray-50 dark:bg-slate-800 text-gray-900 dark:text-white border-gray-200 dark:border-slate-700"></textarea>
+        </div>
+
+        <div class="flex justify-end gap-2 pt-3 border-t border-gray-100 dark:border-slate-800">
+          <button (click)="closeReportModal()" class="px-4 py-2 border border-gray-300 dark:border-slate-700 text-gray-700 dark:text-gray-300 rounded-xl text-xs font-medium cursor-pointer">
+            Cancel
+          </button>
+          <button (click)="submitReport()" [disabled]="isSubmittingReport" class="px-5 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl text-xs cursor-pointer">
+            {{ isSubmittingReport ? 'Submitting...' : 'Submit Report' }}
           </button>
         </div>
       </div>

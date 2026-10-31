@@ -1,7 +1,41 @@
 const Booking = require("../models/booking");
 const mongoose = require("mongoose");
 const { createAndDispatchNotification } = require("./notification");
+const { verifyCustomerAuth } = require("../middleware/auth");
 
+/**
+ * Helper to compute scheduled departure timestamp in milliseconds from booking.departureDetails.
+ */
+function parseDepartureTimeMs(booking) {
+  const depDateStr = booking?.departureDetails?.date || booking?.bookingDate;
+  if (!depDateStr || typeof depDateStr !== "string") return null;
+
+  const rawTime = booking?.departureDetails?.time;
+  let hours = 0;
+  let minutes = 0;
+
+  if (typeof rawTime === "string" && rawTime.includes(":")) {
+    const parts = rawTime.trim().split(":");
+    hours = Number(parts[0]);
+    minutes = Number(parts[1] || 0);
+  } else if (rawTime !== undefined && rawTime !== null && !isNaN(Number(rawTime))) {
+    const num = Number(rawTime);
+    hours = Math.floor(num);
+    minutes = Math.round((num - hours) * 60);
+  } else {
+    return null;
+  }
+
+  if (isNaN(hours) || hours < 0 || hours > 23 || isNaN(minutes) || minutes < 0 || minutes > 59) {
+    return null;
+  }
+
+  const hh = String(hours).padStart(2, "0");
+  const mm = String(minutes).padStart(2, "0");
+  const depIso = `${depDateStr.trim()}T${hh}:${mm}:00`;
+  const ms = new Date(depIso).getTime();
+  return isNaN(ms) ? null : ms;
+}
 
 /**
  * Creates a new bus reservation with strict atomic integrity.
@@ -30,10 +64,43 @@ exports.addbooking = async (req, res) => {
       });
     }
 
+    // If a Bearer token is attached, verify it and prevent forged cross-customer identity in request body
+    let verifiedCustomerId = null;
+    let verifiedEmail = null;
+    if (req.headers?.authorization || req.headers?.Authorization) {
+      const auth = await verifyCustomerAuth(req);
+      if (!auth.authorized) {
+        return res.status(auth.status).json({ error: auth.error, message: auth.message });
+      }
+      verifiedCustomerId = String(auth.customer._id).trim();
+      verifiedEmail = String(auth.customer.email || "").trim().toLowerCase();
+
+      if (
+        raw.customerId &&
+        !String(raw.customerId).startsWith("guest-") &&
+        String(raw.customerId).trim() !== verifiedCustomerId
+      ) {
+        return res.status(403).json({
+          error: "CustomerIsolationViolation",
+          message: "Forged customerId in request body does not match authenticated token identity."
+        });
+      }
+      if (
+        raw.email &&
+        raw.email !== "passenger@tedbus.com" &&
+        String(raw.email).trim().toLowerCase() !== verifiedEmail
+      ) {
+        return res.status(403).json({
+          error: "CustomerIsolationViolation",
+          message: "Forged email in request body does not match authenticated token identity."
+        });
+      }
+    }
+
     const travelDate = raw.departureDetails?.date || raw.date || raw.bookingDate || new Date().toISOString().split("T")[0];
 
     const normalizedBooking = {
-      customerId: raw.customerId || raw.userId || "guest-" + Date.now(),
+      customerId: verifiedCustomerId || raw.customerId || raw.userId || "guest-" + Date.now(),
       busId: String(raw.busId),
       operatorName: raw.operatorName || "TedBus Premier",
       seats: raw.seats.map(s => Number(s)),
@@ -47,16 +114,16 @@ exports.addbooking = async (req, res) => {
           age: Number(p.age || 25)
         })) : raw.seats.map((s, idx) => ({ name: `Passenger ${idx + 1}`, gender: "Male", age: 25 }))
       ),
-      email: raw.email || "passenger@tedbus.com",
+      email: verifiedEmail || raw.email || "passenger@tedbus.com",
       phoneNumber: String(raw.phoneNumber || raw.phone || "9876543210"),
       departureDetails: {
         city: raw.departureDetails?.city || raw.departureCity || raw.route?.departureLocation?.name || "Origin",
-        time: raw.departureDetails?.time || raw.departureTime || 6,
+        time: raw.departureDetails?.time !== undefined ? raw.departureDetails.time : (raw.departureTime !== undefined ? raw.departureTime : 6),
         date: travelDate
       },
       arrivalDetails: {
         city: raw.arrivalDetails?.city || raw.arrivalCity || raw.route?.arrivalLocation?.name || "Destination",
-        time: raw.arrivalDetails?.time || raw.arrivalTime || 12,
+        time: raw.arrivalDetails?.time !== undefined ? raw.arrivalDetails.time : (raw.arrivalTime !== undefined ? raw.arrivalTime : 12),
         date: travelDate
       },
       duration: raw.duration || (raw.route?.duration ? `${raw.route.duration} hrs` : "6 hrs"),
@@ -101,7 +168,6 @@ exports.addbooking = async (req, res) => {
       try {
         session.startTransaction();
 
-        // Double check within transaction
         const conflictInTx = await Booking.findOne({
           busId: normalizedBooking.busId,
           "departureDetails.date": travelDate,
@@ -130,7 +196,6 @@ exports.addbooking = async (req, res) => {
         session.endSession();
       }
     } else {
-      // Direct atomic write on standalone deployment
       savedBooking = await Booking.create(normalizedBooking);
     }
 
@@ -172,33 +237,87 @@ exports.addbooking = async (req, res) => {
 
 /**
  * Cancels an existing booking in the database.
+ * - Requires a valid signed Bearer JWT token.
+ * - Derives customer identity exclusively from the verified token.
+ * - Enforces booking ownership (rejects cross-customer or forged-body requests with HTTP 403).
+ * - Prevents cancellation when departure is less than 2 hours away OR has already passed.
  */
 exports.cancelBooking = async (req, res) => {
   try {
-    const { id } = req.params;
-    if (!id) {
-      return res.status(400).json({ error: "BookingIdRequired", message: "Booking ID is required." });
-    }
-
-    if (mongoose.connection.readyState !== 1) {
-      return res.status(503).json({
-        error: "DatabaseUnavailable",
-        message: "Database service is offline. Cannot cancel booking at this time."
+    const auth = await verifyCustomerAuth(req);
+    if (!auth.authorized) {
+      return res.status(auth.status).json({
+        error: auth.error,
+        message: auth.message
       });
     }
 
-    const updated = await Booking.findByIdAndUpdate(
-      id,
-      { status: "cancelled" },
-      { new: true }
-    );
+    const { id } = req.params;
+    if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ error: "BookingIdRequired", message: "A valid Booking ID is required." });
+    }
 
-    if (!updated) {
+    const authCustomerId = String(auth.customer._id).trim();
+    const authEmail = String(auth.customer.email || "").trim().toLowerCase();
+
+    // Reject forged customerId or email in request body, query, or headers if they conflict with token identity
+    const bodyCustomerId = String(req.body?.customerId || req.headers?.["x-customer-id"] || req.query?.customerId || "").trim();
+    const bodyEmail = String(req.body?.email || req.headers?.["x-customer-email"] || req.query?.email || "").trim().toLowerCase();
+
+    if (bodyCustomerId && bodyCustomerId !== authCustomerId) {
+      return res.status(403).json({
+        error: "BookingOwnershipMismatch",
+        message: "Access denied. Client-supplied customerId does not match the authenticated token identity."
+      });
+    }
+    if (bodyEmail && bodyEmail !== authEmail) {
+      return res.status(403).json({
+        error: "BookingOwnershipMismatch",
+        message: "Access denied. Client-supplied email does not match the authenticated token identity."
+      });
+    }
+
+    const booking = await Booking.findById(id);
+    if (!booking) {
       return res.status(404).json({
         error: "BookingNotFound",
         message: `Booking with ID ${id} was not found.`
       });
     }
+
+    // Verify ownership strictly against authenticated token identity
+    const matchesCustomerId =
+      Boolean(authCustomerId && booking.customerId && String(booking.customerId).trim() === authCustomerId);
+    const matchesEmail =
+      Boolean(authEmail && booking.email && String(booking.email).trim().toLowerCase() === authEmail);
+
+    if (!matchesCustomerId && !matchesEmail) {
+      return res.status(403).json({
+        error: "BookingOwnershipMismatch",
+        message: "Access denied. You can only cancel bookings that belong to your account."
+      });
+    }
+
+    // Enforce 2-hour pre-departure cancellation cutoff AND block already-departed journeys
+    const depTimeMs = parseDepartureTimeMs(booking);
+    if (depTimeMs !== null) {
+      const hoursUntilDeparture = (depTimeMs - Date.now()) / (1000 * 60 * 60);
+      if (hoursUntilDeparture < 0) {
+        return res.status(400).json({
+          error: "CancellationWindowClosed",
+          message: "Bookings cannot be cancelled after the scheduled departure time has passed."
+        });
+      }
+      if (hoursUntilDeparture < 2) {
+        return res.status(400).json({
+          error: "CancellationWindowClosed",
+          message: "Bookings cannot be cancelled within 2 hours of scheduled departure."
+        });
+      }
+    }
+
+    booking.status = "cancelled";
+    const updated = await booking.save();
 
     // Automatically trigger notification for booking cancellation
     try {
@@ -225,23 +344,63 @@ exports.cancelBooking = async (req, res) => {
 };
 
 /**
- * Retrieves bookings for a customer.
+ * Retrieves bookings or a single booking strictly scoped to the verified JWT customer.
+ * Rejects unauthenticated requests with HTTP 401 and cross-customer access with HTTP 403.
  */
 exports.getBooking = async (req, res) => {
   try {
-    const { id } = req.params;
-    if (mongoose.connection.readyState !== 1) {
-      res.setHeader("X-Data-Source", "fallback");
-      return res.status(503).json({
-        error: "DatabaseUnavailable",
-        message: "Database is offline.",
-        bookings: []
+    const auth = await verifyCustomerAuth(req);
+    if (!auth.authorized) {
+      return res.status(auth.status).json({
+        error: auth.error,
+        message: auth.message
       });
     }
 
-    const bookings = await Booking.find({ customerId: id }).sort({ _id: -1 }).lean().exec();
-    res.setHeader("X-Data-Source", "mongodb");
-    res.json(bookings || []);
+    const requestedId = String(req.params.id || "").trim();
+    const authCustomerId = String(auth.customer._id).trim();
+    const authEmail = String(auth.customer.email || "").trim().toLowerCase();
+
+    const headerCustomerId = String(req.headers?.["x-customer-id"] || "").trim();
+    if (headerCustomerId && headerCustomerId !== authCustomerId) {
+      return res.status(403).json({
+        error: "CustomerIsolationViolation",
+        message: "Access denied. Header customerId does not match authenticated token identity."
+      });
+    }
+
+    // If the path parameter matches the authenticated customer's ID or email, return their bookings
+    if (requestedId === authCustomerId || requestedId.toLowerCase() === authEmail) {
+      const filter = authEmail
+        ? { $or: [{ customerId: authCustomerId }, { email: authEmail }] }
+        : { customerId: authCustomerId };
+      const bookings = await Booking.find(filter).sort({ _id: -1 }).lean().exec();
+      res.setHeader("X-Data-Source", "mongodb");
+      return res.json(bookings || []);
+    }
+
+    // Otherwise, check if requestedId is a specific Booking ObjectId owned by the authenticated customer
+    if (mongoose.Types.ObjectId.isValid(requestedId)) {
+      const singleBooking = await Booking.findById(requestedId).lean().exec();
+      if (singleBooking) {
+        const ownsById = singleBooking.customerId && String(singleBooking.customerId).trim() === authCustomerId;
+        const ownsByEmail = authEmail && singleBooking.email && String(singleBooking.email).trim().toLowerCase() === authEmail;
+        if (!ownsById && !ownsByEmail) {
+          return res.status(403).json({
+            error: "CustomerIsolationViolation",
+            message: "Access denied. You cannot view another customer's booking."
+          });
+        }
+        res.setHeader("X-Data-Source", "mongodb");
+        return res.json(singleBooking);
+      }
+    }
+
+    // Any other ID is an unauthorized attempt to access another customer's bookings
+    return res.status(403).json({
+      error: "CustomerIsolationViolation",
+      message: "Access denied. You cannot view another customer's bookings."
+    });
   } catch (error) {
     console.error("[Booking] Error fetching bookings:", error);
     res.status(500).json({ error: "Failed to fetch bookings" });
@@ -249,26 +408,61 @@ exports.getBooking = async (req, res) => {
 };
 
 /**
- * Retrieves all bookings (or filtered by customerId).
+ * Retrieves bookings strictly scoped to the authenticated customer derived from the verified JWT.
+ * Never returns all customers' bookings and never trusts client-supplied customerId/email for identity.
  */
 exports.getAllBookings = async (req, res) => {
   try {
-    const { customerId } = req.query;
-    if (mongoose.connection.readyState !== 1) {
-      res.setHeader("X-Data-Source", "fallback");
-      return res.status(503).json({
-        error: "DatabaseUnavailable",
-        message: "Database is offline.",
-        bookings: []
+    const auth = await verifyCustomerAuth(req);
+    if (!auth.authorized) {
+      return res.status(auth.status).json({
+        error: auth.error,
+        message: auth.message
       });
     }
 
-    const filter = customerId ? { customerId } : {};
+    const authCustomerId = String(auth.customer._id).trim();
+    const authEmail = String(auth.customer.email || "").trim().toLowerCase();
+
+    const queryCustomerId = String(req.query?.customerId || "").trim();
+    const headerCustomerId = String(req.headers?.["x-customer-id"] || "").trim();
+    const queryEmail = String(req.query?.email || "").trim().toLowerCase();
+    const headerEmail = String(req.headers?.["x-customer-email"] || "").trim().toLowerCase();
+    const bodyCustomerId = String(req.body?.customerId || "").trim();
+    const bodyEmail = String(req.body?.email || "").trim().toLowerCase();
+
+    // Reject any cross-customer query, header, or body parameter mismatch with HTTP 403
+    if (
+      (queryCustomerId && queryCustomerId !== authCustomerId) ||
+      (headerCustomerId && headerCustomerId !== authCustomerId) ||
+      (bodyCustomerId && bodyCustomerId !== authCustomerId)
+    ) {
+      return res.status(403).json({
+        error: "CustomerIsolationViolation",
+        message: "Access denied. Requested customerId does not match authenticated customer token."
+      });
+    }
+
+    if (
+      (queryEmail && queryEmail !== authEmail) ||
+      (headerEmail && headerEmail !== authEmail) ||
+      (bodyEmail && bodyEmail !== authEmail)
+    ) {
+      return res.status(403).json({
+        error: "CustomerIsolationViolation",
+        message: "Access denied. Requested email does not match authenticated customer token."
+      });
+    }
+
+    const filter = authEmail
+      ? { $or: [{ customerId: authCustomerId }, { email: authEmail }] }
+      : { customerId: authCustomerId };
+
     const bookings = await Booking.find(filter).sort({ _id: -1 }).lean().exec();
     res.setHeader("X-Data-Source", "mongodb");
     res.json(bookings || []);
   } catch (error) {
-    console.error("[Booking] Error fetching all bookings:", error);
+    console.error("[Booking] Error fetching customer bookings:", error);
     res.status(500).json({ error: "Failed to fetch bookings" });
   }
 };

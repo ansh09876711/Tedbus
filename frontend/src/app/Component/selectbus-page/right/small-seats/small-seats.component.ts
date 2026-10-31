@@ -1,26 +1,35 @@
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges } from '@angular/core';
 
 @Component({
   selector: 'app-small-seats',
   templateUrl: './small-seats.component.html',
   styleUrl: './small-seats.component.css'
 })
-export class SmallSeatsComponent implements OnInit {
+export class SmallSeatsComponent implements OnInit, OnChanges {
   @Input() seatno: number = 0;
   @Input() alreadybookedseats: number[] = [];
   @Input() selectedseats: number[] = [];
   @Output() seatselected = new EventEmitter<number>();
 
   isBooked: boolean = false;
-  isSelected: boolean = false;
 
   ngOnInit(): void {
-    if (this.alreadybookedseats && this.alreadybookedseats.includes(this.seatno)) {
-      this.isBooked = true;
-    }
+    this.updateSeatBookingStatus();
+  }
+
+  ngOnChanges(_changes: SimpleChanges): void {
+    this.updateSeatBookingStatus();
+  }
+
+  private updateSeatBookingStatus(): void {
+    this.isBooked = Boolean(
+      Array.isArray(this.alreadybookedseats) &&
+      this.alreadybookedseats.some(seat => Number(seat) === Number(this.seatno))
+    );
   }
 
   handleclick(): void {
+    this.updateSeatBookingStatus();
     if (this.isBooked) {
       return;
     }
@@ -28,6 +37,9 @@ export class SmallSeatsComponent implements OnInit {
   }
 
   checkSelected(): boolean {
-    return this.selectedseats && this.selectedseats.includes(this.seatno);
+    if (this.isBooked) {
+      return false;
+    }
+    return Boolean(this.selectedseats && this.selectedseats.includes(this.seatno));
   }
 }

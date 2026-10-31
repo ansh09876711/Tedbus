@@ -37,16 +37,14 @@ export class BusBoxComponent implements OnInit, OnChanges {
   calculateDetails(): void {
     if (this.rating && this.rating.length) {
       let sum = 0;
-      let count = 0;
-      this.rating.forEach((item, index) => {
+      this.rating.forEach((item) => {
         sum += item;
-        count += (index + 1) * 12;
       });
       this.avgrating = +(sum / this.rating.length);
-      this.totalreview = count > 0 ? count : 38;
+      this.totalreview = this.rating.length;
     } else {
       this.avgrating = 4.3;
-      this.totalreview = 42;
+      this.totalreview = 0;
     }
 
     const duration = this.routedetails && this.routedetails.duration ? Number(this.routedetails.duration) : 6;

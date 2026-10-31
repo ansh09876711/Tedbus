@@ -33,7 +33,8 @@
             "assets": [
               "src/favicon.ico",
               "src/assets",
-              "src/_redirects"
+              "src/_redirects",
+              "src/sw-push.js"
             ],
             "styles": [
               "src/custom-theme.scss",

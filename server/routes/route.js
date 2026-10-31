@@ -27,5 +27,6 @@ router.get("/routes", async (req, res) => {
 });
 
 router.get("/routes/:departure/:arrival/:date", routecontroller.getoneroute);
+router.post("/routes/initialize", routecontroller.initializeRoutesAndBuses);
 
 module.exports = router;

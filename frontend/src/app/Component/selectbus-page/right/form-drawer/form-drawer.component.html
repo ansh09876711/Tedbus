@@ -4,10 +4,10 @@
 
 <!-- Slide-out Drawer / Overlay -->
 <div class="drawer-overlay" *ngIf="isDrawerOpen" (click)="closeDrawer()"></div>
-<div class="drawer-panel" [ngClass]="{'open': isDrawerOpen}">
-    <div class="drawer-header">
-        <h3 class="text-lg font-bold text-gray-800">Passenger & Booking Details</h3>
-        <button class="close-btn" (click)="closeDrawer()">
+<div class="drawer-panel bg-white dark:bg-slate-900 text-gray-800 dark:text-gray-100" [ngClass]="{'open': isDrawerOpen}">
+    <div class="drawer-header bg-gray-50 dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700">
+        <h3 class="text-lg font-bold text-gray-800 dark:text-white">Passenger &amp; Booking Details</h3>
+        <button class="close-btn text-gray-500 dark:text-gray-400 hover:text-red-600" (click)="closeDrawer()">
             <mat-icon>close</mat-icon>
         </button>
     </div>

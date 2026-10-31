@@ -48,6 +48,12 @@
             <mat-icon style="font-size: 20px; width: 20px; height: 20px;">tune</mat-icon>
             Preferences &amp; Theme
         </button>
+        <button (click)="setTab('community')"
+            [ngClass]="{'border-red-600 text-red-600 font-bold': activeTab === 'community', 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400': activeTab !== 'community'}"
+            class="py-3 px-1 border-b-2 text-sm flex items-center gap-2 whitespace-nowrap transition-colors">
+            <mat-icon style="font-size: 20px; width: 20px; height: 20px;">forum</mat-icon>
+            {{ 'profile.myCommunity' | translate }}
+        </button>
         <button (click)="setTab('wallet')"
             [ngClass]="{'border-red-600 text-red-600 font-bold': activeTab === 'wallet', 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400': activeTab !== 'wallet'}"
             class="py-3 px-1 border-b-2 text-sm flex items-center gap-2 whitespace-nowrap transition-colors">
@@ -274,13 +280,113 @@
         </div>
     </div>
 
+    <!-- My Community Activity Tab Content -->
+    <div *ngIf="activeTab === 'community'" class="space-y-6 max-w-4xl">
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow border border-gray-100 dark:border-gray-700 p-5 flex items-center gap-4">
+                <div class="w-12 h-12 rounded-xl bg-red-50 dark:bg-red-950/50 text-red-600 flex items-center justify-center">
+                    <mat-icon>article</mat-icon>
+                </div>
+                <div>
+                    <div class="text-2xl font-black text-gray-900 dark:text-white">{{ communityActivity.stats.postsCount }}</div>
+                    <div class="text-xs text-gray-500 dark:text-gray-400">Stories Published</div>
+                </div>
+            </div>
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow border border-gray-100 dark:border-gray-700 p-5 flex items-center gap-4">
+                <div class="w-12 h-12 rounded-xl bg-rose-50 dark:bg-rose-950/50 text-rose-600 flex items-center justify-center">
+                    <mat-icon>favorite</mat-icon>
+                </div>
+                <div>
+                    <div class="text-2xl font-black text-gray-900 dark:text-white">{{ communityActivity.stats.likesGivenCount }}</div>
+                    <div class="text-xs text-gray-500 dark:text-gray-400">Stories Liked</div>
+                </div>
+            </div>
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow border border-gray-100 dark:border-gray-700 p-5 flex items-center gap-4">
+                <div class="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-950/50 text-blue-600 flex items-center justify-center">
+                    <mat-icon>chat_bubble</mat-icon>
+                </div>
+                <div>
+                    <div class="text-2xl font-black text-gray-900 dark:text-white">{{ communityActivity.stats.commentsCount }}</div>
+                    <div class="text-xs text-gray-500 dark:text-gray-400">Comments &amp; Replies</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Authored Posts -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow border border-gray-100 dark:border-gray-700 p-6">
+            <div class="flex items-center justify-between mb-4 pb-3 border-b dark:border-gray-700">
+                <h3 class="text-base font-bold text-gray-800 dark:text-white flex items-center gap-2">
+                    <mat-icon class="text-red-600">post_add</mat-icon>
+                    Your Published Stories
+                </h3>
+                <a routerLink="/community" class="text-xs font-bold text-red-600 hover:underline flex items-center gap-1">
+                    Open Community Feed
+                    <mat-icon style="font-size: 14px; width: 14px; height: 14px;">open_in_new</mat-icon>
+                </a>
+            </div>
+
+            <div *ngIf="communityActivity.authoredPosts.length === 0" class="py-8 text-center text-gray-400 text-xs">
+                You haven't published any travel stories yet. Share your first road tip in the Community!
+            </div>
+
+            <div class="space-y-3" *ngIf="communityActivity.authoredPosts.length > 0">
+                <div *ngFor="let p of communityActivity.authoredPosts" class="p-4 rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="px-2 py-0.5 bg-red-100 dark:bg-red-950 text-red-600 dark:text-red-300 text-[10px] font-bold uppercase rounded-full">{{ p.category }}</span>
+                            <span class="text-[11px] text-gray-400">{{ p.createdAt | date:'mediumDate' }}</span>
+                        </div>
+                        <h4 class="text-sm font-bold text-gray-900 dark:text-white">{{ p.title }}</h4>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 line-clamp-1 mt-0.5">{{ p.content }}</p>
+                    </div>
+                    <div class="flex items-center gap-3 text-xs text-gray-500 shrink-0">
+                        <span class="flex items-center gap-1"><mat-icon style="font-size:15px;width:15px;height:15px;">favorite</mat-icon> {{ p.likes?.length || 0 }}</span>
+                        <span class="flex items-center gap-1"><mat-icon style="font-size:15px;width:15px;height:15px;">chat_bubble</mat-icon> {{ p.commentsCount || 0 }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Comments -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow border border-gray-100 dark:border-gray-700 p-6">
+            <h3 class="text-base font-bold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
+                <mat-icon class="text-red-600">forum</mat-icon>
+                Your Recent Comments &amp; Replies
+            </h3>
+            <div *ngIf="communityActivity.comments.length === 0" class="py-6 text-center text-gray-400 text-xs">
+                No community comments posted yet.
+            </div>
+            <div class="space-y-2.5" *ngIf="communityActivity.comments.length > 0">
+                <div *ngFor="let c of communityActivity.comments" class="p-3.5 rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700 text-xs">
+                    <div class="flex justify-between text-gray-400 mb-1">
+                        <span>Commented on Community Post</span>
+                        <span>{{ c.createdAt | date:'short' }}</span>
+                    </div>
+                    <p class="text-gray-800 dark:text-gray-200 font-medium">"{{ c.text }}"</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div *ngIf="activeTab === 'wallet'" class="bg-white dark:bg-gray-800 rounded-xl shadow border border-gray-100 dark:border-gray-700 p-6 max-w-md">
-        <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-2">TedBus Wallet Balance</h3>
-        <div class="text-3xl font-extrabold text-red-600 mb-4">₹ 500.00</div>
-        <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">Use wallet balance seamlessly during checkout for instant one-click booking discounts.</p>
-        <button class="w-full py-2 bg-red-600 hover:bg-red-700 text-white rounded font-medium text-sm transition">
-            Add Money to Wallet
-        </button>
+        <div class="flex items-center gap-2 mb-3">
+            <mat-icon class="text-red-600">account_balance_wallet</mat-icon>
+            <h3 class="text-lg font-bold text-gray-800 dark:text-white">TedBus Wallet</h3>
+        </div>
+        <ng-container *ngIf="walletBalance !== null && walletBalance > 0; else emptyWalletState">
+            <div class="text-3xl font-extrabold text-emerald-600 mb-2">₹ {{ walletBalance | number:'1.2-2' }}</div>
+            <p class="text-xs text-gray-500 dark:text-gray-400">Available wallet balance for eligible bus bookings.</p>
+        </ng-container>
+        <ng-template #emptyWalletState>
+            <div class="p-4 rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700 text-center my-2">
+                <div class="text-2xl font-bold text-gray-400 dark:text-gray-500 mb-1">₹ 0.00</div>
+                <div class="text-xs font-semibold text-gray-700 dark:text-gray-300">No Wallet Balance Available</div>
+                <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-1">
+                    You have no wallet credits or transactions yet. Refunds for cancelled trips are processed directly to your original payment method.
+                </p>
+            </div>
+        </ng-template>
     </div>
 </div>
 

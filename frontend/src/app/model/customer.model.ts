@@ -6,6 +6,9 @@ export interface Customer {
   age?: number;
   gender?: string;
   email: string;
+  password?: string;
+  authToken?: string;
+  role?: string;
   dateofbirth?: string;
   profilepicture?: string;
   profilePicture?: string;

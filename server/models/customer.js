@@ -22,6 +22,16 @@ const customerSchema = new Schema({
     type: String,
     required: true,
   },
+  passwordHash: {
+    type: String,
+    required: false,
+    select: false,
+  },
+  passwordSalt: {
+    type: String,
+    required: false,
+    select: false,
+  },
   dateOfBirth: {
     type: String,
     required: false,

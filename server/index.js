@@ -1,7 +1,6 @@
 require('dotenv').config();
 const dns = require('dns');
 const express = require('express');
-const bodyparser = require('body-parser');
 const cors = require('cors');
 const mongoose = require('mongoose');
 
@@ -46,10 +45,12 @@ app.use(cors({
     }
   },
   credentials: true,
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Customer-Id', 'X-Customer-Email', 'X-Moderator-Id', 'X-Admin-Id', 'X-Author-Id'],
   exposedHeaders: ['X-Data-Source', 'X-Environment']
 }));
 
-app.use(bodyparser.json());
+app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ extended: true }));
 
 // Track active database source: 'atlas' | 'local' | 'none'
 let activeDbSource = 'none';
@@ -74,6 +75,7 @@ const communityroutes = require("./routes/community");
 const reviewroutes = require("./routes/review");
 const notificationroutes = require("./routes/notification");
 const savedRouteroutes = require("./routes/savedRoute");
+const busroutes = require("./routes/bus");
 
 app.use(bookingroute);
 app.use(routesroute);
@@ -82,29 +84,7 @@ app.use(communityroutes);
 app.use(reviewroutes);
 app.use(notificationroutes);
 app.use(savedRouteroutes);
-
-// Bus routes mount check
-let isBusRouteRegistered = false;
-if (app._router && app._router.stack) {
-  isBusRouteRegistered = app._router.stack.some((layer) => {
-    if (layer.route && layer.route.path === "/buses") return true;
-    if (layer.name === "router" && layer.handle && layer.handle.stack) {
-      return layer.handle.stack.some(
-        (subLayer) => subLayer.route && subLayer.route.path === "/buses"
-      );
-    }
-    return false;
-  });
-}
-
-if (!isBusRouteRegistered) {
-  try {
-    const busroutes = require("./routes/bus");
-    app.use(busroutes);
-  } catch (err) {
-    console.warn("Notice: bus routes module could not be loaded:", err.message);
-  }
-}
+app.use(busroutes);
 
 // Health Check & System Status Endpoint
 app.get('/health', (req, res) => {

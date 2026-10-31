@@ -190,9 +190,9 @@
       <div *ngFor="let route of popularRoutes"
            (click)="bookRoute(route)"
            class="flex items-center gap-4 bg-white dark:bg-slate-800 rounded-2xl px-5 py-4 border border-gray-100 dark:border-slate-700 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 cursor-pointer group">
-        <!-- Emoji icon -->
-        <div class="w-12 h-12 rounded-xl bg-red-50 dark:bg-red-950/40 flex items-center justify-center text-2xl flex-shrink-0 group-hover:scale-110 transition-transform">
-          {{route.icon}}
+        <!-- Material icon -->
+        <div class="w-12 h-12 rounded-xl bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+          <mat-icon style="font-size:22px;width:22px;height:22px;">{{route.icon}}</mat-icon>
         </div>
         <!-- Route info -->
         <div class="flex flex-col flex-1 min-w-0">
@@ -240,10 +240,21 @@
         </div>
       </div>
 
+      <!-- Coupon Copy Feedback Banner -->
+      <div *ngIf="couponFeedbackMessage"
+           class="mb-4 px-4 py-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200 text-xs font-semibold flex items-center justify-between">
+        <span class="flex items-center gap-2">
+          <mat-icon style="font-size: 16px; width: 16px; height: 16px;">check_circle</mat-icon>
+          {{ couponFeedbackMessage }}
+        </span>
+        <button type="button" (click)="couponFeedbackMessage = ''; copiedCouponCode = ''" class="text-emerald-600 hover:text-emerald-900 font-bold cursor-pointer">&times;</button>
+      </div>
+
       <div class="flex text-white gap-5 overflow-x-auto pb-3">
 
         <!-- Offer Card 1 (All) -->
         <div *ngIf="activeOfferTab==='all' || activeOfferTab==='bank'"
+             (click)="copyCouponCode('FIRST', $event)"
              class="offer-card h-44 w-72 rounded-2xl bg-gradient-to-br from-blue-700 to-indigo-600 flex flex-col justify-between p-5 cursor-pointer flex-shrink-0 shadow-lg hover:scale-[1.02] transition-transform relative overflow-hidden">
           <div class="absolute -right-4 -top-4 w-20 h-20 rounded-full bg-white/10"></div>
           <div class="flex justify-between items-start relative z-10">
@@ -256,12 +267,15 @@
           </div>
           <div class="flex items-center justify-between pt-2 border-t border-white/20 relative z-10">
             <span class="bg-white/20 px-2.5 py-1 rounded-md font-mono text-xs font-bold border border-dashed border-white/40">FIRST</span>
-            <span class="text-xs opacity-75">{{ 'home.offer1.copyCode' | translate }}</span>
+            <button type="button" (click)="copyCouponCode('FIRST', $event)" class="text-xs font-semibold bg-white/15 hover:bg-white/25 px-2.5 py-1 rounded-md transition-colors cursor-pointer">
+              {{ copiedCouponCode === 'FIRST' ? '✓ Copied!' : ('home.offer1.copyCode' | translate) }}
+            </button>
           </div>
         </div>
 
         <!-- Offer Card 2 (All) -->
         <div *ngIf="activeOfferTab==='all'"
+             (click)="copyCouponCode('SUPERHIT', $event)"
              class="offer-card h-44 w-72 rounded-2xl bg-gradient-to-br from-rose-600 to-red-500 flex flex-col justify-between p-5 cursor-pointer flex-shrink-0 shadow-lg hover:scale-[1.02] transition-transform relative overflow-hidden">
           <div class="absolute -right-4 -top-4 w-20 h-20 rounded-full bg-white/10"></div>
           <div class="flex justify-between items-start relative z-10">
@@ -274,12 +288,15 @@
           </div>
           <div class="flex items-center justify-between pt-2 border-t border-white/20 relative z-10">
             <span class="bg-white/20 px-2.5 py-1 rounded-md font-mono text-xs font-bold border border-dashed border-white/40">SUPERHIT</span>
-            <span class="text-xs opacity-75">{{ 'home.offer2.copyCode' | translate }}</span>
+            <button type="button" (click)="copyCouponCode('SUPERHIT', $event)" class="text-xs font-semibold bg-white/15 hover:bg-white/25 px-2.5 py-1 rounded-md transition-colors cursor-pointer">
+              {{ copiedCouponCode === 'SUPERHIT' ? '✓ Copied!' : ('home.offer2.copyCode' | translate) }}
+            </button>
           </div>
         </div>
 
         <!-- Offer Card 3 (All + Wallet) -->
         <div *ngIf="activeOfferTab==='all' || activeOfferTab==='wallet'"
+             (click)="copyCouponCode('BUS300', $event)"
              class="offer-card h-44 w-72 rounded-2xl bg-gradient-to-br from-emerald-600 to-teal-500 flex flex-col justify-between p-5 cursor-pointer flex-shrink-0 shadow-lg hover:scale-[1.02] transition-transform relative overflow-hidden">
           <div class="absolute -right-4 -top-4 w-20 h-20 rounded-full bg-white/10"></div>
           <div class="flex justify-between items-start relative z-10">
@@ -292,12 +309,15 @@
           </div>
           <div class="flex items-center justify-between pt-2 border-t border-white/20 relative z-10">
             <span class="bg-white/20 px-2.5 py-1 rounded-md font-mono text-xs font-bold border border-dashed border-white/40">BUS300</span>
-            <span class="text-xs opacity-75">{{ 'home.offer3.copyCode' | translate }}</span>
+            <button type="button" (click)="copyCouponCode('BUS300', $event)" class="text-xs font-semibold bg-white/15 hover:bg-white/25 px-2.5 py-1 rounded-md transition-colors cursor-pointer">
+              {{ copiedCouponCode === 'BUS300' ? '✓ Copied!' : ('home.offer3.copyCode' | translate) }}
+            </button>
           </div>
         </div>
 
         <!-- Offer Card 4 (All + Bank) -->
         <div *ngIf="activeOfferTab==='all' || activeOfferTab==='bank'"
+             (click)="copyCouponCode('RBTRIP', $event)"
              class="offer-card h-44 w-72 rounded-2xl bg-gradient-to-br from-cyan-600 to-blue-500 flex flex-col justify-between p-5 cursor-pointer flex-shrink-0 shadow-lg hover:scale-[1.02] transition-transform relative overflow-hidden">
           <div class="absolute -right-4 -top-4 w-20 h-20 rounded-full bg-white/10"></div>
           <div class="flex justify-between items-start relative z-10">
@@ -310,12 +330,15 @@
           </div>
           <div class="flex items-center justify-between pt-2 border-t border-white/20 relative z-10">
             <span class="bg-white/20 px-2.5 py-1 rounded-md font-mono text-xs font-bold border border-dashed border-white/40">RBTRIP</span>
-            <span class="text-xs opacity-75">{{ 'home.offer4.copyCode' | translate }}</span>
+            <button type="button" (click)="copyCouponCode('RBTRIP', $event)" class="text-xs font-semibold bg-white/15 hover:bg-white/25 px-2.5 py-1 rounded-md transition-colors cursor-pointer">
+              {{ copiedCouponCode === 'RBTRIP' ? '✓ Copied!' : ('home.offer4.copyCode' | translate) }}
+            </button>
           </div>
         </div>
 
         <!-- Wallet-only card -->
         <div *ngIf="activeOfferTab==='wallet'"
+             (click)="copyCouponCode('WALLET', $event)"
              class="offer-card h-44 w-72 rounded-2xl bg-gradient-to-br from-violet-600 to-purple-500 flex flex-col justify-between p-5 cursor-pointer flex-shrink-0 shadow-lg hover:scale-[1.02] transition-transform relative overflow-hidden">
           <div class="absolute -right-4 -top-4 w-20 h-20 rounded-full bg-white/10"></div>
           <div class="flex justify-between items-start relative z-10">
@@ -328,75 +351,12 @@
           </div>
           <div class="flex items-center justify-between pt-2 border-t border-white/20 relative z-10">
             <span class="bg-white/20 px-2.5 py-1 rounded-md font-mono text-xs font-bold border border-dashed border-white/40">WALLET</span>
-            <span class="text-xs opacity-75">Copy code</span>
+            <button type="button" (click)="copyCouponCode('WALLET', $event)" class="text-xs font-semibold bg-white/15 hover:bg-white/25 px-2.5 py-1 rounded-md transition-colors cursor-pointer">
+              {{ copiedCouponCode === 'WALLET' ? '✓ Copied!' : 'Copy code' }}
+            </button>
           </div>
         </div>
 
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ===================== APP DOWNLOAD BANNER ===================== -->
-<section class="flex justify-center py-14">
-  <div class="w-[92%] sm:w-[88%] max-w-[1200px] rounded-3xl bg-gradient-to-br from-red-600 via-red-700 to-rose-800 shadow-2xl overflow-hidden relative">
-    <!-- background decoration circles -->
-    <div class="absolute -top-10 -right-10 w-64 h-64 rounded-full bg-white/5 pointer-events-none"></div>
-    <div class="absolute bottom-0 left-20 w-40 h-40 rounded-full bg-white/5 pointer-events-none"></div>
-
-    <div class="flex flex-col md:flex-row items-center justify-between px-8 md:px-14 py-10 gap-8 relative z-10">
-      <!-- Left: Text -->
-      <div class="flex flex-col text-white max-w-md">
-        <span class="text-xs font-bold tracking-widest uppercase text-red-200 mb-2">📱 Get the App</span>
-        <h2 class="text-2xl md:text-3xl font-extrabold leading-tight tracking-tight mb-3">Book Bus Tickets<br>On the Go!</h2>
-        <p class="text-red-100 text-sm leading-relaxed mb-6">Download the TedBus app for lightning-fast bookings, real-time tracking, exclusive app-only deals, and 24/7 support at your fingertips.</p>
-        <!-- Store Buttons -->
-        <div class="flex flex-wrap gap-3">
-          <button class="flex items-center gap-3 bg-black/40 hover:bg-black/60 text-white border border-white/20 px-5 py-3 rounded-xl transition-all group cursor-pointer">
-            <mat-icon style="font-size:22px;width:22px;height:22px;">phone_android</mat-icon>
-            <div class="text-left">
-              <div class="text-[10px] text-red-200">Get it on</div>
-              <div class="text-sm font-bold">Google Play</div>
-            </div>
-          </button>
-          <button class="flex items-center gap-3 bg-black/40 hover:bg-black/60 text-white border border-white/20 px-5 py-3 rounded-xl transition-all group cursor-pointer">
-            <mat-icon style="font-size:22px;width:22px;height:22px;">phone_iphone</mat-icon>
-            <div class="text-left">
-              <div class="text-[10px] text-red-200">Download on the</div>
-              <div class="text-sm font-bold">App Store</div>
-            </div>
-          </button>
-        </div>
-        <!-- Rating badges -->
-        <div class="flex items-center gap-4 mt-5">
-          <div class="flex items-center gap-1.5 text-yellow-300">
-            <i class="fa fa-star text-sm"></i>
-            <i class="fa fa-star text-sm"></i>
-            <i class="fa fa-star text-sm"></i>
-            <i class="fa fa-star text-sm"></i>
-            <i class="fa fa-star text-sm"></i>
-            <span class="text-white text-xs font-semibold ml-1">4.8/5</span>
-          </div>
-          <span class="text-red-200 text-xs">25 Lakh+ Downloads</span>
-        </div>
-      </div>
-
-      <!-- Right: Phone Mockup -->
-      <div class="flex flex-col items-center justify-center">
-        <div class="w-40 h-72 rounded-[2rem] border-4 border-white/30 bg-black/30 backdrop-blur-sm shadow-2xl flex flex-col items-center justify-center relative overflow-hidden">
-          <div class="w-24 h-3 bg-black/50 rounded-full absolute top-4"></div>
-          <div class="w-full h-full flex flex-col items-center justify-center gap-3 px-4 pt-8">
-            <mat-icon class="text-white opacity-80" style="font-size:40px;width:40px;height:40px;">directions_bus</mat-icon>
-            <span class="text-white font-bold text-sm text-center">TedBus</span>
-            <span class="text-red-200 text-[10px] text-center">Fast • Safe • Reliable</span>
-            <div class="mt-2 px-4 py-1.5 bg-red-500 rounded-lg text-white text-[10px] font-bold">Book Now</div>
-          </div>
-          <!-- QR code placeholder -->
-          <div class="absolute bottom-4 right-4 w-10 h-10 bg-white/20 rounded-md flex items-center justify-center">
-            <mat-icon class="text-white opacity-70" style="font-size:18px;width:18px;height:18px;">qr_code</mat-icon>
-          </div>
-        </div>
-        <span class="text-red-200 text-xs mt-3">Scan QR to download</span>
       </div>
     </div>
   </div>
@@ -411,32 +371,32 @@
     </div>
 
     <div class="flex flex-col gap-4">
-      <div class="p-6 cursor-pointer bg-white dark:bg-slate-800 group hover:bg-slate-50 dark:hover:bg-slate-700/60 rounded-2xl border border-gray-200 dark:border-slate-700 transition-all shadow-sm">
+      <div (click)="toggleFaq(0)" class="p-6 cursor-pointer bg-white dark:bg-slate-800 group hover:bg-slate-50 dark:hover:bg-slate-700/60 rounded-2xl border border-gray-200 dark:border-slate-700 transition-all shadow-sm">
         <div class="flex justify-between items-center font-semibold text-gray-800 dark:text-white text-base md:text-lg">
           <h3>{{ 'home.faq1.q' | translate }}</h3>
-          <i class="fa-solid fa-chevron-down text-gray-400 group-hover:text-red-600 transition-colors"></i>
+          <mat-icon class="text-gray-400 group-hover:text-red-600 transition-transform duration-200" [class.rotate-180]="openFaqIndex === 0">expand_more</mat-icon>
         </div>
-        <p class="text-xs md:text-sm text-gray-600 dark:text-gray-300 mt-4 leading-relaxed">
+        <p *ngIf="openFaqIndex === 0" class="text-xs md:text-sm text-gray-600 dark:text-gray-300 mt-4 leading-relaxed">
           {{ 'home.faq1.a' | translate }}
         </p>
       </div>
 
-      <div class="p-6 cursor-pointer bg-white dark:bg-slate-800 group hover:bg-slate-50 dark:hover:bg-slate-700/60 rounded-2xl border border-gray-200 dark:border-slate-700 transition-all shadow-sm">
+      <div (click)="toggleFaq(1)" class="p-6 cursor-pointer bg-white dark:bg-slate-800 group hover:bg-slate-50 dark:hover:bg-slate-700/60 rounded-2xl border border-gray-200 dark:border-slate-700 transition-all shadow-sm">
         <div class="flex justify-between items-center font-semibold text-gray-800 dark:text-white text-base md:text-lg">
           <h3>{{ 'home.faq2.q' | translate }}</h3>
-          <i class="fa-solid fa-chevron-down text-gray-400 group-hover:text-red-600 transition-colors"></i>
+          <mat-icon class="text-gray-400 group-hover:text-red-600 transition-transform duration-200" [class.rotate-180]="openFaqIndex === 1">expand_more</mat-icon>
         </div>
-        <p class="text-xs md:text-sm text-gray-600 dark:text-gray-300 mt-4 leading-relaxed">
+        <p *ngIf="openFaqIndex === 1" class="text-xs md:text-sm text-gray-600 dark:text-gray-300 mt-4 leading-relaxed">
           {{ 'home.faq2.a' | translate }}
         </p>
       </div>
 
-      <div class="p-6 cursor-pointer bg-white dark:bg-slate-800 group hover:bg-slate-50 dark:hover:bg-slate-700/60 rounded-2xl border border-gray-200 dark:border-slate-700 transition-all shadow-sm">
+      <div (click)="toggleFaq(2)" class="p-6 cursor-pointer bg-white dark:bg-slate-800 group hover:bg-slate-50 dark:hover:bg-slate-700/60 rounded-2xl border border-gray-200 dark:border-slate-700 transition-all shadow-sm">
         <div class="flex justify-between items-center font-semibold text-gray-800 dark:text-white text-base md:text-lg">
           <h3>{{ 'home.faq3.q' | translate }}</h3>
-          <i class="fa-solid fa-chevron-down text-gray-400 group-hover:text-red-600 transition-colors"></i>
+          <mat-icon class="text-gray-400 group-hover:text-red-600 transition-transform duration-200" [class.rotate-180]="openFaqIndex === 2">expand_more</mat-icon>
         </div>
-        <p class="text-xs md:text-sm text-gray-600 dark:text-gray-300 mt-4 leading-relaxed">
+        <p *ngIf="openFaqIndex === 2" class="text-xs md:text-sm text-gray-600 dark:text-gray-300 mt-4 leading-relaxed">
           {{ 'home.faq3.a' | translate }}
         </p>
       </div>

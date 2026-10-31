@@ -1,6 +1,7 @@
 const { JourneyReview, ReviewReport } = require("../models/review");
 const Booking = require("../models/booking");
 const mongoose = require("mongoose");
+const { verifyModeratorOrAdmin, verifyCustomerAuth, extractBearerToken } = require("../middleware/auth");
 
 // 24-hour edit window (in milliseconds)
 const EDIT_WINDOW_MS = 24 * 60 * 60 * 1000;
@@ -93,7 +94,26 @@ exports.createReview = async (req, res) => {
       });
     }
 
-    const { bookingId, customerId, authorName, rating, reviewText, routeId, busId } = req.body;
+    const auth = await verifyCustomerAuth(req);
+    if (!auth.authorized) {
+      return res.status(auth.status).json({ error: auth.error, message: auth.message });
+    }
+
+    const { bookingId, authorName, rating, reviewText, routeId, busId } = req.body;
+    const suppliedCustomerId = req.body.customerId;
+    const authCustomerId = String(auth.customer._id);
+    const authEmail = String(auth.customer.email || "").toLowerCase();
+
+    if (
+      suppliedCustomerId &&
+      String(suppliedCustomerId).trim() !== authCustomerId &&
+      String(suppliedCustomerId).trim().toLowerCase() !== authEmail
+    ) {
+      return res.status(403).json({
+        error: "CustomerIdentityMismatch",
+        message: "Submitted customerId does not match the authenticated customer token."
+      });
+    }
 
     // 1. Validate rating
     if (!rating || rating < 1 || rating > 5) {
@@ -119,14 +139,17 @@ exports.createReview = async (req, res) => {
         });
       }
 
-      // Ownership check (soft — only when customerId is a valid ObjectId)
-      if (customerId && customerId.match(/^[0-9a-fA-F]{24}$/) && booking.customerId) {
-        if (String(booking.customerId) !== String(customerId)) {
-          return res.status(403).json({
-            error: "BookingOwnershipMismatch",
-            message: "This booking does not belong to your account."
-          });
-        }
+      // Ownership check: verify authenticated customer owns the booking
+      const bookingCustId = String(booking.customerId || "").trim();
+      const bookingEmail = String(booking.email || "").trim().toLowerCase();
+      const ownsById = bookingCustId === authCustomerId;
+      const ownsByEmail = Boolean(authEmail && bookingEmail && bookingEmail === authEmail);
+
+      if (!ownsById && !ownsByEmail) {
+        return res.status(403).json({
+          error: "BookingOwnershipMismatch",
+          message: "This booking does not belong to your authenticated account."
+        });
       }
 
       // Status check: must be confirmed or completed
@@ -154,13 +177,13 @@ exports.createReview = async (req, res) => {
       return res.status(400).json({ error: "You have already reviewed this journey. Only one review per booking is permitted." });
     }
 
-    // 5. Create the review
+    // 5. Create the review (customerId derived strictly from verified JWT)
     const review = await JourneyReview.create({
       bookingId: verifiedBookingId,
-      customerId: customerId && customerId.match(/^[0-9a-fA-F]{24}$/) ? customerId : new mongoose.Types.ObjectId(),
+      customerId: auth.customer._id,
       routeId: routeId && routeId.match(/^[0-9a-fA-F]{24}$/) ? routeId : new mongoose.Types.ObjectId(),
       busId: busId && busId.match(/^[0-9a-fA-F]{24}$/) ? busId : undefined,
-      authorName: authorName || "Verified Passenger",
+      authorName: auth.customer.name || authorName || "Verified Passenger",
       rating: Number(rating),
       reviewText: reviewText.trim(),
       isVerifiedJourney,
@@ -178,7 +201,7 @@ exports.createReview = async (req, res) => {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// PUT /reviews/:id — Edit a review (only within 24-hour window)
+// PUT /reviews/:id — Edit a review (Authenticated Owner Only, within 24-hour window)
 // ─────────────────────────────────────────────────────────────────────────────
 exports.editReview = async (req, res) => {
   try {
@@ -186,8 +209,27 @@ exports.editReview = async (req, res) => {
       return res.status(503).json({ error: "DatabaseUnavailable", message: "Database is offline." });
     }
 
+    const auth = await verifyCustomerAuth(req);
+    if (!auth.authorized) {
+      return res.status(auth.status).json({ error: auth.error, message: auth.message });
+    }
+
     const { id } = req.params;
-    const { customerId, rating, reviewText } = req.body;
+    const { rating, reviewText } = req.body;
+    const suppliedCustomerId = req.body.customerId;
+    const authCustomerId = String(auth.customer._id);
+    const authEmail = String(auth.customer.email || "").toLowerCase();
+
+    if (
+      suppliedCustomerId &&
+      String(suppliedCustomerId).trim() !== authCustomerId &&
+      String(suppliedCustomerId).trim().toLowerCase() !== authEmail
+    ) {
+      return res.status(403).json({
+        error: "CustomerIdentityMismatch",
+        message: "Submitted customerId does not match the authenticated customer token."
+      });
+    }
 
     if (!id || !id.match(/^[0-9a-fA-F]{24}$/)) {
       return res.status(400).json({ error: "Invalid review ID" });
@@ -198,12 +240,12 @@ exports.editReview = async (req, res) => {
       return res.status(404).json({ error: "ReviewNotFound", message: "Review not found." });
     }
 
-    // Authorization: only enforce ownership when both sides are valid MongoDB ObjectIds
-    const isValidObjectId = (v) => v && String(v).match(/^[0-9a-fA-F]{24}$/);
-    if (customerId && review.customerId && isValidObjectId(customerId) && isValidObjectId(review.customerId)) {
-      if (String(review.customerId) !== String(customerId)) {
-        return res.status(403).json({ error: "Unauthorized", message: "You can only edit your own reviews." });
-      }
+    // Authorization: enforce review ownership strictly against verified JWT identity
+    if (String(review.customerId).trim() !== authCustomerId) {
+      return res.status(403).json({
+        error: "ReviewOwnershipMismatch",
+        message: "You can only edit your own reviews."
+      });
     }
 
     // Enforce 24-hour edit window
@@ -240,27 +282,37 @@ exports.editReview = async (req, res) => {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// POST /reviews/:id/helpful — Vote helpful on a review
+// POST /reviews/:id/helpful — Vote helpful on a review (Authenticated Customer Only)
 // ─────────────────────────────────────────────────────────────────────────────
 exports.voteHelpful = async (req, res) => {
   try {
-    const { id } = req.params;
-    const { userId } = req.body;
-
-    if (!userId) {
-      return res.status(400).json({ error: "User ID is required to vote" });
+    const auth = await verifyCustomerAuth(req);
+    if (!auth.authorized) {
+      return res.status(auth.status).json({ error: auth.error, message: auth.message });
     }
 
-    try {
+    const { id } = req.params;
+    const suppliedUserId = req.body.userId;
+    const authUserId = String(auth.customer._id);
+
+    if (suppliedUserId && String(suppliedUserId).trim() !== authUserId) {
+      return res.status(403).json({
+        error: "UserIdentityMismatch",
+        message: "Submitted userId does not match the authenticated customer token."
+      });
+    }
+
+    if (id && id.match(/^[0-9a-fA-F]{24}$/)) {
       const review = await JourneyReview.findById(id);
-      if (review) {
-        if (!review.helpfulVotes.some(u => u.toString() === userId.toString())) {
-          review.helpfulVotes.push(userId);
-          await review.save();
-        }
-        return res.json({ success: true, count: review.helpfulVotes.length });
+      if (!review) {
+        return res.status(404).json({ error: "ReviewNotFound", message: "Review not found." });
       }
-    } catch (e) {}
+      if (!review.helpfulVotes.some(u => u.toString() === authUserId)) {
+        review.helpfulVotes.push(authUserId);
+        await review.save();
+      }
+      return res.json({ success: true, count: review.helpfulVotes.length });
+    }
 
     res.json({ success: true, count: 3 });
   } catch (error) {
@@ -269,7 +321,7 @@ exports.voteHelpful = async (req, res) => {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// POST /reviews/:id/report — Report an inappropriate review
+// POST /reviews/:id/report — Report an inappropriate review (Authenticated Customer Only)
 // ─────────────────────────────────────────────────────────────────────────────
 exports.reportReview = async (req, res) => {
   try {
@@ -277,14 +329,27 @@ exports.reportReview = async (req, res) => {
       return res.status(503).json({ error: "DatabaseUnavailable", message: "Database is offline." });
     }
 
+    const auth = await verifyCustomerAuth(req);
+    if (!auth.authorized) {
+      return res.status(auth.status).json({ error: auth.error, message: auth.message });
+    }
+
     const { id } = req.params;
     const { reportedBy, reason, description } = req.body;
+    const authUserId = String(auth.customer._id);
+
+    if (reportedBy && String(reportedBy).trim() !== authUserId) {
+      return res.status(403).json({
+        error: "ReporterIdentityMismatch",
+        message: "Submitted reportedBy does not match the authenticated customer token."
+      });
+    }
 
     if (!id || !id.match(/^[0-9a-fA-F]{24}$/)) {
       return res.status(400).json({ error: "Invalid review ID" });
     }
-    if (!reportedBy || !reason) {
-      return res.status(400).json({ error: "reportedBy and reason are required" });
+    if (!reason) {
+      return res.status(400).json({ error: "reason is required" });
     }
 
     const VALID_REASONS = ["spam", "offensive", "fake", "irrelevant", "other"];
@@ -297,17 +362,15 @@ exports.reportReview = async (req, res) => {
       return res.status(404).json({ error: "ReviewNotFound", message: "Review not found." });
     }
 
-    // Prevent duplicate reports from the same user
-    const existingReport = await ReviewReport.findOne({ reviewId: id, reportedBy }).lean();
+    // Prevent duplicate reports from the same authenticated user
+    const existingReport = await ReviewReport.findOne({ reviewId: id, reportedBy: auth.customer._id }).lean();
     if (existingReport) {
       return res.status(400).json({ error: "DuplicateReport", message: "You have already reported this review." });
     }
 
     const report = await ReviewReport.create({
       reviewId: new mongoose.Types.ObjectId(id),
-      reportedBy: String(reportedBy).match(/^[0-9a-fA-F]{24}$/)
-        ? new mongoose.Types.ObjectId(reportedBy)
-        : reportedBy,
+      reportedBy: auth.customer._id,
       reason,
       description: description || "",
       status: "pending"
@@ -332,6 +395,11 @@ exports.moderateReview = async (req, res) => {
   try {
     if (mongoose.connection.readyState !== 1) {
       return res.status(503).json({ error: "DatabaseUnavailable", message: "Database is offline." });
+    }
+
+    const auth = await verifyModeratorOrAdmin(req);
+    if (!auth.authorized) {
+      return res.status(auth.status).json({ error: auth.error, message: auth.message });
     }
 
     const { id } = req.params;

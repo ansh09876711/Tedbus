@@ -1,6 +1,7 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
+import { Subscription } from 'rxjs';
 import { DataService } from '../../service/dataservice.service';
 import { API_BASE_URL } from '../../config';
 
@@ -9,13 +10,14 @@ import { API_BASE_URL } from '../../config';
   templateUrl: './payment-page.component.html',
   styleUrl: './payment-page.component.css'
 })
-export class PaymentPageComponent implements OnInit {
+export class PaymentPageComponent implements OnInit, OnDestroy {
   bookingData: any = null;
   selectedPaymentMethod: string = 'card';
   paymentProcessing: boolean = false;
   paymentSuccess: boolean = false;
   confirmedBookingId: string = '';
   errorMessage: string = '';
+  private dataSub?: Subscription;
 
   // Card form fields
   cardNumber: string = '';
@@ -27,7 +29,7 @@ export class PaymentPageComponent implements OnInit {
   upiId: string = '';
 
   // Netbanking
-  selectedBank: string = 'HDFC';
+  selectedBank: string = 'HDFC Bank';
 
   constructor(
     private dataService: DataService,
@@ -36,7 +38,7 @@ export class PaymentPageComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.dataService.currentData.subscribe(data => {
+    this.dataSub = this.dataService.currentData.subscribe(data => {
       if (data && data.seats) {
         this.bookingData = data;
       } else {
@@ -75,6 +77,10 @@ export class PaymentPageComponent implements OnInit {
         date: new Date().toISOString().split('T')[0]
       };
     }
+  }
+
+  ngOnDestroy(): void {
+    this.dataSub?.unsubscribe();
   }
 
   selectMethod(method: string): void {
@@ -138,7 +144,7 @@ export class PaymentPageComponent implements OnInit {
     existing.unshift({
       ...payload,
       _id: bookingId,
-      bookingDate: new Date().toISOString()
+      bookingDate: payload.date || new Date().toISOString().split('T')[0]
     });
     localStorage.setItem('my_trips', JSON.stringify(existing));
     localStorage.removeItem('pendingBooking');

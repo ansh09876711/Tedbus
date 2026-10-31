@@ -32,7 +32,8 @@ import { BusBookingFormComponent } from './Component/selectbus-page/right/bus-bo
 import { PaymentPageComponent } from './Component/payment-page/payment-page.component';
 import { ProfilePageComponent } from './Component/profile-page/profile-page.component';
 import { MyTripComponent } from './Component/profile-page/my-trip/my-trip.component';
-import { HttpClientModule } from '@angular/common/http';
+import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
+import { AuthInterceptor } from './service/auth.interceptor';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatInputModule } from '@angular/material/input';
 import { TranslatePipe } from './pipes/translate.pipe';
@@ -82,7 +83,10 @@ import { RoutePlannerComponent } from './Component/route-planner/route-planner.c
     MatTooltipModule,
     MatInputModule
   ],
-  providers: [provideNativeDateAdapter()],
+  providers: [
+    provideNativeDateAdapter(),
+    { provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true }
+  ],
   bootstrap: [AppComponent]
 })
 export class AppModule { }

@@ -1,23 +1,45 @@
 <div class="route-planner-page max-w-6xl mx-auto py-8 px-4">
 
+  <!-- Traffic Refresh Feedback Banner -->
+  <div *ngIf="trafficRefreshBanner"
+       class="mb-4 px-4 py-3 rounded-xl bg-green-50 dark:bg-green-950/80 border border-green-300 dark:border-green-800 text-green-800 dark:text-green-200 flex items-center justify-between text-xs font-semibold shadow-sm">
+    <div class="flex items-center gap-2">
+      <mat-icon style="font-size: 18px; width: 18px; height: 18px;">traffic</mat-icon>
+      <span>{{ trafficRefreshBanner }}</span>
+    </div>
+    <button (click)="trafficRefreshBanner = ''" class="opacity-70 hover:opacity-100">
+      <mat-icon style="font-size: 16px; width: 16px; height: 16px;">close</mat-icon>
+    </button>
+  </div>
+
   <!-- ======= HEADER ======= -->
   <div class="bg-gradient-to-r from-red-600 via-red-700 to-rose-800 rounded-2xl p-6 md:p-8 text-white shadow-xl mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 relative overflow-hidden">
     <div class="absolute -top-8 -right-8 w-40 h-40 rounded-full bg-white/5 pointer-events-none"></div>
     <div class="absolute bottom-0 left-32 w-24 h-24 rounded-full bg-white/5 pointer-events-none"></div>
     <div class="relative z-10">
       <span class="px-3 py-1 bg-white/20 rounded-full text-xs font-semibold uppercase tracking-wider backdrop-blur-sm inline-block mb-2">
-        Smart Journey Planner
+        {{ 'routePlanner.smartBadge' | translate }}
       </span>
       <h1 class="text-2xl md:text-3xl font-black tracking-tight">{{ 'routePlanner.title' | translate }}</h1>
       <p class="text-red-100 text-sm mt-1 max-w-xl">{{ 'routePlanner.subtitle' | translate }}</p>
     </div>
-    <!-- Save to Favourites Button -->
-    <button (click)="saveCurrentRoute()" [disabled]="isSaving || !hasCalculated"
-      [ngClass]="isSaved ? 'bg-green-400 text-white border-green-300' : 'bg-white text-red-600 hover:bg-red-50 border-white'"
-      class="relative z-10 px-5 py-2.5 font-bold rounded-xl shadow-md transition-all flex items-center gap-2 text-sm shrink-0 border cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed">
-      <mat-icon style="font-size: 20px; width: 20px; height: 20px;">{{ isSaved ? 'bookmark' : 'bookmark_add' }}</mat-icon>
-      <span>{{ isSaved ? (saveFeedback || 'Saved!') : ('routePlanner.saveRoute' | translate) }}</span>
-    </button>
+
+    <div class="relative z-10 flex flex-wrap items-center gap-2.5 shrink-0">
+      <!-- Refresh Route & Traffic Button -->
+      <button (click)="refreshRouteAndTraffic()" [disabled]="isCalculating || isRefreshingTraffic"
+              class="px-4 py-2.5 bg-white/15 hover:bg-white/25 text-white border border-white/30 font-semibold rounded-xl transition-all flex items-center gap-1.5 text-xs cursor-pointer disabled:opacity-60">
+        <mat-icon [class.animate-spin]="isRefreshingTraffic" style="font-size: 18px; width: 18px; height: 18px;">refresh</mat-icon>
+        <span>{{ isRefreshingTraffic ? 'Refreshing...' : ('routePlanner.refreshTraffic' | translate) }}</span>
+      </button>
+
+      <!-- Save to Favourites Button -->
+      <button (click)="saveCurrentRoute()" [disabled]="isSaving || !hasCalculated"
+        [ngClass]="isSaved ? 'bg-green-400 text-white border-green-300' : 'bg-white text-red-600 hover:bg-red-50 border-white'"
+        class="px-5 py-2.5 font-bold rounded-xl shadow-md transition-all flex items-center gap-2 text-sm border cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed">
+        <mat-icon style="font-size: 20px; width: 20px; height: 20px;">{{ isSaved ? 'bookmark' : 'bookmark_add' }}</mat-icon>
+        <span>{{ isSaved ? (saveFeedback || 'Saved!') : ('routePlanner.saveRoute' | translate) }}</span>
+      </button>
+    </div>
   </div>
 
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -26,7 +48,7 @@
     <div class="lg:col-span-1 bg-white dark:bg-slate-800/90 rounded-2xl border border-gray-100 dark:border-slate-800 p-6 shadow-sm h-fit space-y-5">
       <h2 class="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2 border-b border-gray-100 dark:border-slate-700 pb-3">
         <mat-icon class="text-red-600">tune</mat-icon>
-        Plan Your Journey
+        {{ 'routePlanner.planJourney' | translate }}
       </h2>
 
       <!-- Origin Input -->
@@ -56,7 +78,7 @@
             Intermediate Stop #{{ i + 1 }}
           </label>
           <div class="flex gap-2">
-            <input type="text" [(ngModel)]="wp.name" placeholder="e.g. Neemrana, Mathura"
+            <input type="text" [(ngModel)]="wp.name" (change)="calculateRoute()" placeholder="e.g. Neemrana, Mathura"
                    class="w-full px-3.5 py-2 border rounded-xl text-sm outline-none focus:border-red-500 bg-gray-50 dark:bg-slate-900 text-gray-900 dark:text-white border-gray-200 dark:border-slate-700">
             <button (click)="removeWaypoint(i)" class="px-2.5 text-gray-400 hover:text-red-600 transition-colors rounded-lg hover:bg-red-50 cursor-pointer" title="Remove stop">
               <mat-icon style="font-size: 20px; width: 20px; height: 20px;">remove_circle_outline</mat-icon>
@@ -96,7 +118,6 @@
       <button (click)="calculateRoute()" [disabled]="isCalculating"
               class="w-full py-3 bg-red-600 hover:bg-red-700 active:scale-95 text-white font-bold rounded-xl shadow-md transition-all flex items-center justify-center gap-2 text-sm cursor-pointer disabled:opacity-70">
         <mat-icon *ngIf="!isCalculating" style="font-size: 18px; width: 18px; height: 18px;">directions</mat-icon>
-        <!-- Loading spinner -->
         <div *ngIf="isCalculating" class="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin"></div>
         <span>{{ isCalculating ? 'Calculating...' : ('routePlanner.calculateRoute' | translate) }}</span>
       </button>
@@ -105,11 +126,11 @@
       <button *ngIf="hasCalculated" (click)="bookBusesForRoute()"
               class="w-full py-3 bg-white dark:bg-slate-700 border-2 border-red-600 dark:border-red-400 text-red-600 dark:text-red-400 hover:bg-red-600 hover:text-white dark:hover:bg-red-600 dark:hover:text-white font-bold rounded-xl shadow-sm transition-all flex items-center justify-center gap-2 text-sm cursor-pointer">
         <mat-icon style="font-size: 18px; width: 18px; height: 18px;">directions_bus</mat-icon>
-        <span>Book Buses for this Route</span>
+        <span>{{ 'routePlanner.bookBusesRoute' | translate }}</span>
       </button>
     </div>
 
-    <!-- ======= RIGHT PANEL: Route Visuals ======= -->
+    <!-- ======= RIGHT PANEL: Interactive Map & Route Visuals ======= -->
     <div class="lg:col-span-2 space-y-5">
 
       <!-- Loading State -->
@@ -118,9 +139,230 @@
         <p class="text-sm text-gray-500 dark:text-gray-400 font-medium">Calculating best routes across Indian highways...</p>
       </div>
 
+      <!-- ======= INTERACTIVE HIGHWAY CORRIDOR MAP CANVAS ======= -->
+      <div *ngIf="hasCalculated && !isCalculating"
+           class="bg-white dark:bg-slate-800/90 rounded-2xl border border-gray-100 dark:border-slate-800 overflow-hidden shadow-sm">
+        <!-- Map Toolbar -->
+        <div class="px-5 py-3.5 border-b border-gray-100 dark:border-slate-700 flex flex-wrap items-center justify-between gap-3">
+          <div class="flex items-center gap-2">
+            <mat-icon class="text-red-600">map</mat-icon>
+            <div>
+              <div class="flex items-center gap-2 flex-wrap">
+                <h3 class="text-xs font-bold text-gray-900 dark:text-white uppercase tracking-wider">
+                  {{ 'routePlanner.interactiveMap' | translate }}
+                </h3>
+                <span class="px-2 py-0.5 bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 rounded text-[10px] font-semibold">
+                  {{ 'routePlanner.modelBadge' | translate }}
+                </span>
+              </div>
+              <p class="text-[11px] text-gray-400">
+                Click any city pin, toll plaza, or highway corridor line to inspect estimated Haversine & corridor metrics
+              </p>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2 flex-wrap">
+            <!-- Map Layer Switcher -->
+            <div class="flex bg-gray-100 dark:bg-slate-900 p-0.5 rounded-lg text-[11px]">
+              <button (click)="setMapStyle('standard')"
+                      [ngClass]="mapStyle === 'standard' ? 'bg-white dark:bg-slate-700 text-red-600 font-bold shadow-xs' : 'text-gray-500 dark:text-gray-400'"
+                      class="px-2.5 py-1 rounded-md transition cursor-pointer">Standard</button>
+              <button (click)="setMapStyle('terrain')"
+                      [ngClass]="mapStyle === 'terrain' ? 'bg-white dark:bg-slate-700 text-red-600 font-bold shadow-xs' : 'text-gray-500 dark:text-gray-400'"
+                      class="px-2.5 py-1 rounded-md transition cursor-pointer">Terrain</button>
+              <button (click)="setMapStyle('satellite')"
+                      [ngClass]="mapStyle === 'satellite' ? 'bg-white dark:bg-slate-700 text-red-600 font-bold shadow-xs' : 'text-gray-500 dark:text-gray-400'"
+                      class="px-2.5 py-1 rounded-md transition cursor-pointer">Satellite</button>
+            </div>
+
+            <!-- Zoom Controls -->
+            <div class="flex items-center border border-gray-200 dark:border-slate-700 rounded-lg overflow-hidden text-xs">
+              <button (click)="zoomMap(0.15)" class="px-2 py-1 hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200 font-bold cursor-pointer" title="Zoom In">+</button>
+              <button (click)="resetMapView()" class="px-2 py-1 hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-500 text-[10px] border-x border-gray-200 dark:border-slate-700 cursor-pointer" title="Fit Route Bounds">Fit</button>
+              <button (click)="zoomMap(-0.15)" class="px-2 py-1 hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-200 font-bold cursor-pointer" title="Zoom Out">−</button>
+            </div>
+
+            <!-- Open in Google Maps -->
+            <a [href]="getGoogleMapsDirectionsUrl()" target="_blank" rel="noopener noreferrer"
+               class="px-2.5 py-1 bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 text-blue-600 dark:text-blue-300 rounded-lg text-[11px] font-semibold flex items-center gap-1 transition">
+              <mat-icon style="font-size: 13px; width: 13px; height: 13px;">open_in_new</mat-icon>
+              Google Maps
+            </a>
+          </div>
+        </div>
+
+        <!-- Interactive Real Map Viewport (Leaflet OpenStreetMap / Terrain / Satellite + SVG Fallback) -->
+        <div class="relative w-full h-96 overflow-hidden select-none transition-colors"
+             [ngClass]="{
+               'bg-slate-100 dark:bg-slate-900': mapStyle === 'standard',
+               'bg-emerald-50/70 dark:bg-emerald-950/40': mapStyle === 'terrain',
+               'bg-slate-950': mapStyle === 'satellite'
+             }">
+
+          <!-- Real Interactive Leaflet Map Canvas -->
+          <div id="tedbus-leaflet-map"
+               *ngIf="leafletAvailable"
+               class="leaflet-route-container"></div>
+
+          <!-- Offline SVG Fallback Canvas (rendered only if Leaflet CDN is unreachable) -->
+          <svg *ngIf="!leafletAvailable" viewBox="0 0 760 320" class="w-full h-full transition-transform duration-300"
+               [style.transform]="'scale(' + mapZoom + ')'">
+            <defs>
+              <pattern id="mapGrid" width="40" height="40" patternUnits="userSpaceOnUse">
+                <path d="M 40 0 L 0 0 0 40" fill="none"
+                      [attr.stroke]="mapStyle === 'satellite' ? 'rgba(255,255,255,0.06)' : 'rgba(148,163,184,0.18)'"
+                      stroke-width="1"/>
+              </pattern>
+              <filter id="pinShadow" x="-20%" y="-20%" width="140%" height="140%">
+                <feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.35"/>
+              </filter>
+            </defs>
+
+            <!-- Coordinate Grid Background -->
+            <rect width="760" height="320" fill="url(#mapGrid)" />
+
+            <!-- Decorative Topographical Contour Rings -->
+            <ellipse cx="380" cy="160" rx="290" ry="115" fill="none"
+                     [attr.stroke]="mapStyle === 'satellite' ? 'rgba(56,189,248,0.1)' : 'rgba(148,163,184,0.22)'"
+                     stroke-dasharray="6 6" stroke-width="1"/>
+            <ellipse cx="380" cy="160" rx="190" ry="75" fill="none"
+                     [attr.stroke]="mapStyle === 'satellite' ? 'rgba(56,189,248,0.1)' : 'rgba(148,163,184,0.18)'"
+                     stroke-dasharray="3 5" stroke-width="1"/>
+
+            <!-- Alternative 3: Scenic / Local Bypass Polyline -->
+            <path *ngIf="alternatives.length >= 3 && scenicSvgPath"
+                  [attr.d]="scenicSvgPath"
+                  (click)="selectAlternative('alt-3')"
+                  fill="none"
+                  [attr.stroke]="selectedAlternativeId === 'alt-3' ? '#dc2626' : '#94a3b8'"
+                  [attr.stroke-width]="selectedAlternativeId === 'alt-3' ? 5 : 2.5"
+                  stroke-dasharray="4 6"
+                  class="cursor-pointer transition-all hover:opacity-90" />
+
+            <!-- Alternative 2: State Highway Polyline -->
+            <path *ngIf="alternatives.length >= 2 && secondarySvgPath"
+                  [attr.d]="secondarySvgPath"
+                  (click)="selectAlternative('alt-2')"
+                  fill="none"
+                  [attr.stroke]="selectedAlternativeId === 'alt-2' ? '#f59e0b' : '#64748b'"
+                  [attr.stroke-width]="selectedAlternativeId === 'alt-2' ? 5 : 3"
+                  stroke-dasharray="8 5"
+                  class="cursor-pointer transition-all hover:opacity-90" />
+
+            <!-- Alternative 1: Primary National Expressway Polyline -->
+            <path *ngIf="primarySvgPath"
+                  [attr.d]="primarySvgPath"
+                  (click)="selectAlternative('alt-1')"
+                  fill="none"
+                  [attr.stroke]="selectedAlternativeId === 'alt-1' ? '#16a34a' : '#475569'"
+                  [attr.stroke-width]="selectedAlternativeId === 'alt-1' ? 6 : 3.5"
+                  stroke-linecap="round"
+                  class="cursor-pointer transition-all" />
+
+            <!-- Animated Traffic Flow Pulse on Primary Corridor -->
+            <path *ngIf="primarySvgPath"
+                  [attr.d]="primarySvgPath"
+                  fill="none"
+                  stroke="#ffffff"
+                  stroke-width="2"
+                  stroke-dasharray="6 18"
+                  stroke-linecap="round"
+                  class="pointer-events-none opacity-80" />
+
+            <!-- Toll Plaza Markers -->
+            <g *ngFor="let toll of tollNodes"
+               (click)="selectMapNode(toll)"
+               class="cursor-pointer group">
+              <circle [attr.cx]="toll.x" [attr.cy]="toll.y" r="6"
+                      fill="#2563eb" stroke="#ffffff" stroke-width="2" filter="url(#pinShadow)" />
+              <text [attr.x]="toll.x" [attr.y]="toll.y - 10"
+                    text-anchor="middle"
+                    [attr.fill]="mapStyle === 'satellite' ? '#93c5fd' : '#1e40af'"
+                    font-size="9" font-weight="600">
+                Toll ({{ toll.kmFromStart }} km)
+              </text>
+            </g>
+
+            <!-- Origin, Waypoints & Destination Nodes -->
+            <g *ngFor="let node of mapNodes"
+               (click)="selectMapNode(node)"
+               class="cursor-pointer">
+              <!-- Outer Pulse Ring for Selected Node -->
+              <circle *ngIf="selectedMapNode?.name === node.name"
+                      [attr.cx]="node.x" [attr.cy]="node.y" r="16"
+                      [attr.fill]="node.type === 'origin' ? 'rgba(22,163,74,0.22)' : (node.type === 'destination' ? 'rgba(220,38,38,0.22)' : 'rgba(245,158,11,0.22)')" />
+
+              <!-- Pin Circle -->
+              <circle [attr.cx]="node.x" [attr.cy]="node.y"
+                      [attr.r]="node.type === 'waypoint' ? 8 : 10"
+                      [attr.fill]="node.type === 'origin' ? '#16a34a' : (node.type === 'destination' ? '#dc2626' : '#f59e0b')"
+                      stroke="#ffffff" stroke-width="2.5"
+                      filter="url(#pinShadow)" />
+
+              <!-- Label Pill -->
+              <rect [attr.x]="node.x - 48" [attr.y]="node.y + 13" width="96" height="20" rx="6"
+                    [attr.fill]="mapStyle === 'satellite' ? 'rgba(15,23,42,0.9)' : 'rgba(255,255,255,0.92)'"
+                    stroke="rgba(148,163,184,0.4)" stroke-width="1" />
+              <text [attr.x]="node.x" [attr.y]="node.y + 26"
+                    text-anchor="middle"
+                    [attr.fill]="mapStyle === 'satellite' ? '#f8fafc' : '#0f172a'"
+                    font-size="10" font-weight="700">
+                {{ node.name }}
+              </text>
+            </g>
+          </svg>
+
+          <!-- Selected Node Live Telemetry Overlay Card -->
+          <div *ngIf="selectedMapNode"
+               class="absolute bottom-3 left-3 right-3 sm:right-auto sm:max-w-xs z-[450] bg-white/95 dark:bg-slate-900/95 backdrop-blur-md p-3 rounded-xl border border-gray-200 dark:border-slate-700 shadow-lg text-xs">
+            <div class="flex items-center justify-between gap-3 mb-1">
+              <div class="flex items-center gap-1.5">
+                <span class="w-2.5 h-2.5 rounded-full"
+                      [ngClass]="{
+                        'bg-green-600': selectedMapNode.type === 'origin',
+                        'bg-amber-500': selectedMapNode.type === 'waypoint',
+                        'bg-blue-600': selectedMapNode.type === 'toll',
+                        'bg-red-600': selectedMapNode.type === 'destination'
+                      }"></span>
+                <strong class="text-gray-900 dark:text-white">{{ selectedMapNode.name }}</strong>
+              </div>
+              <span class="text-[10px] font-mono text-gray-400">
+                {{ selectedMapNode.lat }}°N, {{ selectedMapNode.lng }}°E
+              </span>
+            </div>
+            <div class="flex items-center justify-between text-[11px] text-gray-500 dark:text-gray-400">
+              <span>Corridor: <strong class="text-gray-700 dark:text-gray-200">{{ selectedMapNode.highway }}</strong></span>
+              <span>• {{ selectedMapNode.kmFromStart }} km from start</span>
+            </div>
+          </div>
+
+          <!-- Legend & Timestamp Overlay -->
+          <div class="absolute top-3 right-3 z-[450] bg-white/95 dark:bg-slate-900/95 backdrop-blur-xs px-3 py-2 rounded-xl border border-gray-200 dark:border-slate-700 shadow-md text-[10px] space-y-1 text-gray-600 dark:text-gray-300">
+            <div class="flex items-center gap-1.5">
+              <span class="w-3 h-1 bg-green-600 rounded"></span>
+              <span>Expressway (Fastest)</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span class="w-3 h-1 bg-amber-500 rounded"></span>
+              <span>State Highway Alt</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-blue-600"></span>
+              <span>FASTag Toll Plaza</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Route Summary Stats (after calculation) -->
       <div *ngIf="hasCalculated && !isCalculating" class="bg-white dark:bg-slate-800/90 rounded-2xl border border-gray-100 dark:border-slate-800 p-5 shadow-sm">
-        <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">Multi-Stop Journey Overview</h3>
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider">Multi-Stop Journey Overview (Estimated)</h3>
+          <span *ngIf="lastRefreshedAt" class="text-[11px] text-gray-400 flex items-center gap-1">
+            <mat-icon style="font-size: 13px; width: 13px; height: 13px;" class="text-green-500">sync</mat-icon>
+            Corridor model updated {{ lastRefreshedAt | date:'shortTime' }}
+          </span>
+        </div>
 
         <!-- Stops visual -->
         <div class="flex flex-wrap items-center gap-2 mb-5">
@@ -147,17 +389,17 @@
           <div class="bg-gray-50 dark:bg-slate-900 rounded-xl p-3 text-center">
             <mat-icon class="text-red-500 text-xl mb-1" style="font-size:22px;width:22px;height:22px;">straighten</mat-icon>
             <div class="text-lg font-black text-gray-900 dark:text-white">{{ totalDistanceKm }} km</div>
-            <div class="text-[11px] text-gray-400">Total Distance</div>
+            <div class="text-[11px] text-gray-400">{{ 'routePlanner.distance' | translate }}</div>
           </div>
           <div class="bg-gray-50 dark:bg-slate-900 rounded-xl p-3 text-center">
             <mat-icon class="text-blue-500 text-xl mb-1" style="font-size:22px;width:22px;height:22px;">schedule</mat-icon>
             <div class="text-lg font-black text-gray-900 dark:text-white">{{ totalDurationHours }} hrs</div>
-            <div class="text-[11px] text-gray-400">Est. Travel Time</div>
+            <div class="text-[11px] text-gray-400">{{ 'routePlanner.estTime' | translate }}</div>
           </div>
           <div class="bg-gray-50 dark:bg-slate-900 rounded-xl p-3 text-center">
             <mat-icon class="text-amber-500 text-xl mb-1" style="font-size:22px;width:22px;height:22px;">toll</mat-icon>
             <div class="text-lg font-black text-gray-900 dark:text-white">{{ totalTolls }}</div>
-            <div class="text-[11px] text-gray-400">Toll Plazas</div>
+            <div class="text-[11px] text-gray-400">{{ 'routePlanner.tollPlazas' | translate }}</div>
           </div>
         </div>
       </div>

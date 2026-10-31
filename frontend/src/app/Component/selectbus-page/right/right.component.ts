@@ -169,7 +169,38 @@ export class RightComponent implements OnInit, OnDestroy {
       });
     }
 
-    // 8. Sorting
+    // 8. Boarding Point Filter
+    if (state.selectedBoarding) {
+      const allBoardings: string[] = this.routes?.departureLocation?.subLocations || [];
+      filtered = filtered.filter(bus => {
+        const busIdx = this.rawBuses.indexOf(bus);
+        const busBoardings = this.getBusBoardingPoints(bus, busIdx, allBoardings);
+        return busBoardings.some(bp => bp.toLowerCase() === state.selectedBoarding.toLowerCase());
+      });
+    }
+
+    // 9. Dropping Point Filter
+    if (state.selectedDropping) {
+      const allDroppings: string[] = this.routes?.arrivalLocation?.subLocations || [];
+      filtered = filtered.filter(bus => {
+        const busIdx = this.rawBuses.indexOf(bus);
+        const busDroppings = this.getBusDroppingPoints(bus, busIdx, allDroppings);
+        return busDroppings.some(dp => dp.toLowerCase() === state.selectedDropping.toLowerCase());
+      });
+    }
+
+    // 10. Amenities Filter (every checked amenity must be present on the bus)
+    const activeAmenities = Object.entries(state.amenities)
+      .filter(([_, active]) => active)
+      .map(([key]) => key as keyof FilterState['amenities']);
+    if (activeAmenities.length > 0) {
+      filtered = filtered.filter(bus => {
+        const busAmenities = this.getBusAmenities(bus);
+        return activeAmenities.every(amenityKey => Boolean(busAmenities[amenityKey]));
+      });
+    }
+
+    // 11. Sorting
     filtered.sort((a, b) => {
       const fareA = this.calculateBusFare(a, duration);
       const fareB = this.calculateBusFare(b, duration);
@@ -214,5 +245,55 @@ export class RightComponent implements OnInit, OnDestroy {
       return bus.rating.reduce((sum, r) => sum + r, 0) / bus.rating.length;
     }
     return 4.2;
+  }
+
+  private getBusBoardingPoints(bus: Bus, busIndex: number, routeSubLocations: string[]): string[] {
+    if (Array.isArray(bus.boardingPoints) && bus.boardingPoints.length > 0) {
+      return bus.boardingPoints;
+    }
+    if (!routeSubLocations || routeSubLocations.length === 0) {
+      return [];
+    }
+    if (routeSubLocations.length <= 2 || this.rawBuses.length <= 1) {
+      return routeSubLocations;
+    }
+    const safeIdx = Math.max(0, busIndex);
+    return routeSubLocations.filter((_, idx) => idx === 0 || (idx + safeIdx) % 2 === 0 || idx === safeIdx % routeSubLocations.length);
+  }
+
+  private getBusDroppingPoints(bus: Bus, busIndex: number, routeSubLocations: string[]): string[] {
+    if (Array.isArray(bus.droppingPoints) && bus.droppingPoints.length > 0) {
+      return bus.droppingPoints;
+    }
+    if (!routeSubLocations || routeSubLocations.length === 0) {
+      return [];
+    }
+    if (routeSubLocations.length <= 2 || this.rawBuses.length <= 1) {
+      return routeSubLocations;
+    }
+    const safeIdx = Math.max(0, busIndex);
+    return routeSubLocations.filter((_, idx) => idx === 0 || (idx + safeIdx) % 2 === 0 || idx === safeIdx % routeSubLocations.length);
+  }
+
+  private getBusAmenities(bus: Bus): FilterState['amenities'] {
+    if (bus.amenities) {
+      return {
+        wifi: Boolean(bus.amenities.wifi),
+        waterBottle: Boolean(bus.amenities.waterBottle),
+        blankets: Boolean(bus.amenities.blankets),
+        chargingPoint: Boolean(bus.amenities.chargingPoint),
+        movie: Boolean(bus.amenities.movie)
+      };
+    }
+    const typeLower = (bus.busType || '').toLowerCase();
+    const isSleeper = typeLower.includes('sleeper');
+    const isAc = typeLower.includes('a/c') || typeLower.includes('ac') || isSleeper;
+    return {
+      wifi: isAc || bus.liveTracking === 1,
+      waterBottle: isAc || bus.reschedulable === 1,
+      blankets: isSleeper,
+      chargingPoint: true,
+      movie: isSleeper || (isAc && bus.liveTracking === 1)
+    };
   }
 }

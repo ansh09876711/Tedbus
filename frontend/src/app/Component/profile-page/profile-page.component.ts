@@ -29,6 +29,8 @@ interface NotificationPrefs {
 export class ProfilePageComponent implements OnInit {
   activeTab: string = 'trips';
   user: any = null;
+  walletBalance: number | null = null;
+  walletTransactions: any[] = [];
 
   // Notifications
   notifications: UserNotification[] = [];
@@ -41,6 +43,20 @@ export class ProfilePageComponent implements OnInit {
   };
 
   filterUnreadOnly: boolean = false;
+
+  // Community Activity
+  loadingCommunity: boolean = false;
+  communityActivity: {
+    authoredPosts: any[];
+    likedPosts: any[];
+    comments: any[];
+    stats: { postsCount: number; likesGivenCount: number; commentsCount: number };
+  } = {
+    authoredPosts: [],
+    likedPosts: [],
+    comments: [],
+    stats: { postsCount: 0, likesGivenCount: 0, commentsCount: 0 }
+  };
 
   get unreadCount(): number {
     return this.notifications.filter(n => !n.read).length;
@@ -112,6 +128,12 @@ export class ProfilePageComponent implements OnInit {
           if (profile.notificationPreferences) {
             this.notificationPrefs = { ...this.notificationPrefs, ...profile.notificationPreferences };
           }
+          if (typeof profile.walletBalance === 'number') {
+            this.walletBalance = profile.walletBalance;
+          }
+          if (Array.isArray(profile.walletTransactions)) {
+            this.walletTransactions = profile.walletTransactions;
+          }
         }
       },
       error: () => {}
@@ -123,7 +145,30 @@ export class ProfilePageComponent implements OnInit {
     this.activeTab = tab;
     if (tab === 'notifications') {
       this.loadNotifications();
+    } else if (tab === 'community') {
+      this.loadCommunityActivity();
     }
+  }
+
+  loadCommunityActivity(): void {
+    this.loadingCommunity = true;
+    const customerId = this.user?._id || '';
+    this.http.get<any>(`${API_BASE_URL}community/user/${customerId}`).subscribe({
+      next: (data) => {
+        this.loadingCommunity = false;
+        if (data) {
+          this.communityActivity = {
+            authoredPosts: data.authoredPosts || [],
+            likedPosts: data.likedPosts || [],
+            comments: data.comments || [],
+            stats: data.stats || { postsCount: 0, likesGivenCount: 0, commentsCount: 0 }
+          };
+        }
+      },
+      error: () => {
+        this.loadingCommunity = false;
+      }
+    });
   }
 
   loadNotifications(): void {
@@ -134,6 +179,7 @@ export class ProfilePageComponent implements OnInit {
       next: (data) => {
         this.loadingNotifications = false;
         this.notifications = data || [];
+        this.dispatchBrowserPushForUnread();
       },
       error: () => {
         this.loadingNotifications = false;
@@ -161,6 +207,24 @@ export class ProfilePageComponent implements OnInit {
     });
   }
 
+  private dispatchBrowserPushForUnread(): void {
+    if (!this.notificationPrefs.push || typeof window === 'undefined' || !('Notification' in window)) {
+      return;
+    }
+    if (Notification.permission === 'granted') {
+      const latestUnread = this.notifications.find(n => !n.read && n._id && !n._id.startsWith('notif-'));
+      if (latestUnread) {
+        const shownKey = `tedbus_push_shown_${latestUnread._id}`;
+        if (!sessionStorage.getItem(shownKey)) {
+          try {
+            new Notification(latestUnread.title, { body: latestUnread.message });
+            sessionStorage.setItem(shownKey, '1');
+          } catch (_) {}
+        }
+      }
+    }
+  }
+
   markAsRead(item: UserNotification): void {
     item.read = true;
     this.http.put(`${API_BASE_URL}notifications/${item._id}/read`, {}).subscribe();
@@ -173,6 +237,14 @@ export class ProfilePageComponent implements OnInit {
 
   updatePref(channel: keyof NotificationPrefs): void {
     this.notificationPrefs[channel] = !this.notificationPrefs[channel];
+    if (channel === 'push' && this.notificationPrefs.push && typeof window !== 'undefined') {
+      if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission().catch(() => {});
+      }
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw-push.js').catch(() => {});
+      }
+    }
     if (this.user?._id) {
       this.http.put(`${API_BASE_URL}notifications/preferences/${this.user._id}`, this.notificationPrefs).subscribe();
     }

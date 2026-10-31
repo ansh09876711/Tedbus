@@ -1,11 +1,11 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, OnChanges, SimpleChanges } from '@angular/core';
 
 @Component({
   selector: 'app-view-seats',
   templateUrl: './view-seats.component.html',
   styleUrl: './view-seats.component.css'
 })
-export class ViewSeatsComponent {
+export class ViewSeatsComponent implements OnChanges {
   @Input() filledseats: any[] = [];
   @Input() seatprice: number = 0;
   @Input() routedetails: any;
@@ -15,6 +15,13 @@ export class ViewSeatsComponent {
   @Input() operatorname: string = '';
 
   selectedseats: number[] = [];
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['filledseats'] && Array.isArray(this.filledseats)) {
+      const bookedSet = new Set(this.filledseats.map(s => Number(s)));
+      this.selectedseats = this.selectedseats.filter(s => !bookedSet.has(Number(s)));
+    }
+  }
 
   generatearray(len: number): number[] {
     const arr: number[] = [];

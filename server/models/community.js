@@ -42,6 +42,10 @@ const communityPostSchema = new Schema({
     type: Schema.Types.ObjectId,
     ref: "Customers",
   }],
+  commentsCount: {
+    type: Number,
+    default: 0,
+  },
   reportsCount: {
     type: Number,
     default: 0,
@@ -60,6 +64,11 @@ const communityCommentSchema = new Schema({
     required: true,
     index: true,
   },
+  parentCommentId: {
+    type: Schema.Types.ObjectId,
+    ref: "CommunityComments",
+    default: null,
+  },
   author: {
     type: Schema.Types.ObjectId,
     ref: "Customers",
@@ -73,10 +82,18 @@ const communityCommentSchema = new Schema({
     type: String,
     default: "",
   },
+  isAuthorVerified: {
+    type: Boolean,
+    default: true,
+  },
   text: {
     type: String,
     required: true,
     trim: true,
+  },
+  reportsCount: {
+    type: Number,
+    default: 0,
   },
   isHidden: {
     type: Boolean,

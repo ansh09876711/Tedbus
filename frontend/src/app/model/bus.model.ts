@@ -9,4 +9,13 @@ export interface Bus {
   images: string;
   liveTracking: number;
   reschedulable: number;
+  boardingPoints?: string[];
+  droppingPoints?: string[];
+  amenities?: {
+    wifi?: boolean;
+    waterBottle?: boolean;
+    blankets?: boolean;
+    chargingPoint?: boolean;
+    movie?: boolean;
+  };
 }

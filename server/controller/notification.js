@@ -1,6 +1,9 @@
 const mongoose = require("mongoose");
 const { Notification, NotificationDeliveryAttempt } = require("../models/notification");
 const Customer = require("../models/customer");
+const { verifyAdminOnly } = require("../middleware/auth");
+const { isSmtpConfigured, sendSmtpEmail } = require("../services/emailService");
+const { isVapidConfigured, getVapidPublicKey, sendWebPushNotification } = require("../services/webPushService");
 
 const defaultNotifications = [
   {
@@ -47,6 +50,7 @@ async function createAndDispatchNotification({ customerId, type, title, message,
     // 2. Fetch Customer Preferences & Language
     let prefs = { inApp: true, email: true, push: true, promotional: false };
     let customerLang = lang;
+    let custDoc = null;
 
     if (customerId) {
       try {
@@ -58,10 +62,11 @@ async function createAndDispatchNotification({ customerId, type, title, message,
           cust = await Customer.findOne({ $or: [{ email: customerId }, { googleId: customerId }] }).lean().exec();
         }
         if (cust) {
+          custDoc = cust;
           if (cust.notificationPreferences) prefs = { ...prefs, ...cust.notificationPreferences };
           if (cust.languagePreference) customerLang = cust.languagePreference;
         }
-      } catch (e) {}
+      } catch (e) { }
     }
 
     // 3. Check Promotional Opt-In
@@ -70,12 +75,25 @@ async function createAndDispatchNotification({ customerId, type, title, message,
       return null;
     }
 
-    // 4. Create Notification Document
+    // 4. Localize Notification Title & Message when customer prefers Hindi ('hi')
+    let finalTitle = title;
+    let finalMessage = message;
+    if (customerLang === "hi") {
+      if (meta.titleHi) finalTitle = meta.titleHi;
+      else if (type === "booking_confirmed" && String(title).startsWith("Booking Confirmed")) {
+        finalTitle = String(title).replace("Booking Confirmed", "बुकिंग पुष्ट");
+      } else if (type === "booking_cancelled" && String(title).startsWith("Booking Cancelled")) {
+        finalTitle = String(title).replace("Booking Cancelled", "बुकिंग रद्द");
+      }
+      if (meta.messageHi) finalMessage = meta.messageHi;
+    }
+
+    // Create Notification Document
     const notif = await Notification.create({
       customerId,
       type,
-      title,
-      message,
+      title: finalTitle,
+      message: finalMessage,
       link: link || "/profile",
       read: false,
       idempotencyKey: idempotencyKey || undefined,
@@ -93,20 +111,14 @@ async function createAndDispatchNotification({ customerId, type, title, message,
       });
     }
 
-    // Channel B: email (Verified delivery acceptance semantics)
+    // Channel B: email (Real SMTP transport; never claims delivered when credentials are missing)
     if (prefs.email) {
-      // In production or test environment: dispatch email
-      // Never mark delivered unless provider confirms delivery or acceptance
-      const isEmailValid = meta.email || (typeof customerId === 'string' && customerId.includes('@'));
-      if (isEmailValid || process.env.NODE_ENV !== 'production') {
-        await NotificationDeliveryAttempt.create({
-          notificationId: notif._id,
-          channel: "email",
-          status: "delivered", // Simulated provider 202 Accepted
-          attemptCount: 1,
-          errorMessage: "",
-        });
-      } else {
+      const recipientEmail =
+        meta.email ||
+        (custDoc && custDoc.email) ||
+        (typeof customerId === "string" && customerId.includes("@") ? customerId : "");
+
+      if (!recipientEmail || !String(recipientEmail).includes("@")) {
         await NotificationDeliveryAttempt.create({
           notificationId: notif._id,
           channel: "email",
@@ -114,18 +126,62 @@ async function createAndDispatchNotification({ customerId, type, title, message,
           attemptCount: 1,
           errorMessage: "No valid recipient email address on customer profile.",
         });
+      } else if (!isSmtpConfigured()) {
+        await NotificationDeliveryAttempt.create({
+          notificationId: notif._id,
+          channel: "email",
+          status: "pending",
+          attemptCount: 1,
+          errorMessage: "SMTP credentials not configured (set SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS).",
+        });
+      } else {
+        const emailResult = await sendSmtpEmail({
+          to: recipientEmail,
+          subject: finalTitle,
+          text: finalMessage,
+        });
+        await NotificationDeliveryAttempt.create({
+          notificationId: notif._id,
+          channel: "email",
+          status: emailResult.delivered ? "delivered" : "failed",
+          attemptCount: 1,
+          errorMessage: emailResult.error || "",
+        });
       }
     }
 
-    // Channel C: push (Browser push notification acceptance)
+    // Channel C: push (Service Worker VAPID Web Push; never claims delivered when VAPID keys are missing)
     if (prefs.push) {
-      await NotificationDeliveryAttempt.create({
-        notificationId: notif._id,
-        channel: "push",
-        status: "delivered",
-        attemptCount: 1,
-        errorMessage: "",
-      });
+      if (!isVapidConfigured()) {
+        await NotificationDeliveryAttempt.create({
+          notificationId: notif._id,
+          channel: "push",
+          status: "pending",
+          attemptCount: 1,
+          errorMessage: "VAPID WebPush keys not configured (set VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT).",
+        });
+      } else if (!custDoc || !custDoc.pushSubscription) {
+        await NotificationDeliveryAttempt.create({
+          notificationId: notif._id,
+          channel: "push",
+          status: "pending",
+          attemptCount: 1,
+          errorMessage: "Customer has not registered a browser WebPush subscription endpoint.",
+        });
+      } else {
+        const pushResult = await sendWebPushNotification(custDoc.pushSubscription, {
+          title: finalTitle,
+          message: finalMessage,
+          link: link || "/profile",
+        });
+        await NotificationDeliveryAttempt.create({
+          notificationId: notif._id,
+          channel: "push",
+          status: pushResult.delivered ? "delivered" : "failed",
+          attemptCount: 1,
+          errorMessage: pushResult.error || "",
+        });
+      }
     }
 
     console.log(`[Notifications] Notification #${notif._id} dispatched for customer=${customerId} [type=${type}]`);
@@ -231,7 +287,7 @@ exports.getPreferences = async (req, res) => {
         if (customer && customer.notificationPreferences) {
           prefs = customer.notificationPreferences;
         }
-      } catch (e) {}
+      } catch (e) { }
     }
 
     res.json(prefs);
@@ -264,41 +320,82 @@ exports.updatePreferences = async (req, res) => {
   }
 };
 
-// Failed delivery retry mechanism
+// Failed delivery retry mechanism (Admin-only protected)
 exports.retryFailedDeliveries = async (req, res) => {
   try {
     if (mongoose.connection.readyState !== 1) {
       return res.status(503).json({ error: "DatabaseUnavailable" });
     }
 
+    const auth = await verifyAdminOnly(req);
+    if (!auth.authorized) {
+      return res.status(auth.status).json({ error: auth.error, message: auth.message });
+    }
+
     // Find attempts that failed and haven't exceeded retry limit (max 3)
     const failedAttempts = await NotificationDeliveryAttempt.find({
       status: "failed",
       attemptCount: { $lt: 3 },
-    }).limit(20);
+    })
+      .populate("notificationId")
+      .limit(20);
 
     let retried = 0;
+    let deliveredCount = 0;
     for (const attempt of failedAttempts) {
       attempt.attemptCount += 1;
-      // Simulate/execute channel retry
-      attempt.status = "delivered";
-      attempt.errorMessage = "";
+      if (attempt.channel === "in_app") {
+        attempt.status = "delivered";
+        attempt.errorMessage = "";
+        deliveredCount++;
+      } else if (attempt.channel === "email") {
+        if (!isSmtpConfigured()) {
+          attempt.status = "failed";
+          attempt.errorMessage = "Retry blocked: SMTP credentials not configured (set SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS).";
+        } else {
+          const notifDoc = attempt.notificationId;
+          const recipient = notifDoc && typeof notifDoc.customerId === "string" && notifDoc.customerId.includes("@")
+            ? notifDoc.customerId
+            : "";
+          const emailRes = await sendSmtpEmail({
+            to: recipient,
+            subject: notifDoc?.title || "TedBus Notification",
+            text: notifDoc?.message || ""
+          });
+          attempt.status = emailRes.delivered ? "delivered" : "failed";
+          attempt.errorMessage = emailRes.error || "";
+          if (emailRes.delivered) deliveredCount++;
+        }
+      } else if (attempt.channel === "push") {
+        if (!isVapidConfigured()) {
+          attempt.status = "failed";
+          attempt.errorMessage = "Retry blocked: VAPID WebPush keys not configured (set VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT).";
+        } else {
+          attempt.status = "failed";
+          attempt.errorMessage = "Retry blocked: No active push subscription endpoint.";
+        }
+      }
       await attempt.save();
       retried++;
     }
 
-    res.json({ success: true, retriedCount: retried });
+    res.json({ success: true, retriedCount: retried, deliveredCount });
   } catch (error) {
     console.error("Retry failed error:", error);
     res.status(500).json({ error: "Failed to process delivery retries" });
   }
 };
 
-// Get delivery tracking history
+// Get delivery tracking history (Admin-only protected)
 exports.getDeliveryHistory = async (req, res) => {
   try {
     if (mongoose.connection.readyState !== 1) {
       return res.status(503).json({ error: "DatabaseUnavailable" });
+    }
+
+    const auth = await verifyAdminOnly(req);
+    if (!auth.authorized) {
+      return res.status(auth.status).json({ error: auth.error, message: auth.message });
     }
 
     const { notificationId } = req.query;
@@ -317,9 +414,14 @@ exports.getDeliveryHistory = async (req, res) => {
   }
 };
 
-// Manual notification trigger endpoint (Promotional, Announcements, Reminders)
+// Manual notification trigger endpoint (Admin-only protected)
 exports.triggerNotification = async (req, res) => {
   try {
+    const auth = await verifyAdminOnly(req);
+    if (!auth.authorized) {
+      return res.status(auth.status).json({ error: auth.error, message: auth.message });
+    }
+
     const { customerId, type, title, message, link, idempotencyKey, lang, email } = req.body;
     if (!customerId || !type || !title || !message) {
       return res.status(400).json({ error: "Missing required notification fields" });
@@ -344,6 +446,18 @@ exports.triggerNotification = async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: "Failed to trigger notification" });
   }
+};
+
+// Get notification provider & VAPID configuration status
+exports.getConfigStatus = async (req, res) => {
+  res.json({
+    inAppConfigured: true,
+    smtpConfigured: isSmtpConfigured(),
+    vapidConfigured: isVapidConfigured(),
+    vapidPublicKey: getVapidPublicKey(),
+    smsConfigured: false,
+    smsMessage: "SMS provider is not configured."
+  });
 };
 
 module.exports.createAndDispatchNotification = createAndDispatchNotification;

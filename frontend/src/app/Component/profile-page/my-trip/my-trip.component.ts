@@ -18,18 +18,48 @@ export class MyTripComponent implements OnInit {
     this.loadTrips();
   }
 
+  private getAuthenticatedUser(): { customerId: string; email: string; authToken: string } | null {
+    try {
+      const raw = sessionStorage.getItem('Loggedinuser') || localStorage.getItem('currentUser');
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      const customerId = String(parsed?._id || parsed?.id || parsed?.googleId || '').trim();
+      const email = String(parsed?.email || '').trim().toLowerCase();
+      const authToken = String(sessionStorage.getItem('AuthToken') || parsed?.authToken || '').trim();
+      if ((!customerId && !email) || !authToken) return null;
+      return { customerId, email, authToken };
+    } catch {
+      return null;
+    }
+  }
+
   loadTrips(): void {
     this.loading = true;
+    const authUser = this.getAuthenticatedUser();
 
-    // Load from local storage
-    const localTrips: any[] = JSON.parse(localStorage.getItem('my_trips') || '[]');
+    // Load local storage trips scoped to the authenticated user
+    const allLocalTrips: any[] = JSON.parse(localStorage.getItem('my_trips') || '[]');
+    const localTrips = authUser
+      ? allLocalTrips.filter(b => {
+          const bCust = String(b.customerId || '').trim();
+          const bEmail = String(b.email || '').trim().toLowerCase();
+          return (authUser.customerId && bCust === authUser.customerId) ||
+                 (authUser.email && bEmail === authUser.email);
+        })
+      : [];
 
-    // Also fetch from backend
+    // Do not request server bookings if user is not authenticated
+    if (!authUser) {
+      this.loading = false;
+      this.trips = [];
+      return;
+    }
+
+    // AuthInterceptor attaches Authorization: Bearer <token>; backend derives customer identity from verified JWT
     this.http.get(`${API_BASE_URL}booking`).subscribe({
       next: (serverBookings: any) => {
         this.loading = false;
         if (Array.isArray(serverBookings) && serverBookings.length > 0) {
-          // Merge unique bookings
           const map = new Map<string, any>();
           [...localTrips, ...serverBookings].forEach(b => {
             const key = b._id || `${b.busId}-${b.seats?.join(',')}`;
@@ -49,38 +79,29 @@ export class MyTripComponent implements OnInit {
     });
   }
 
-  addDefaultDemoTrip(): void {
-    this.trips = [
-      {
-        _id: 'TB-789412',
-        operatorName: 'TedBus Zingbus Gold',
-        departureCity: 'Delhi',
-        arrivalCity: 'Jaipur',
-        departureTime: 6,
-        arrivalTime: 11,
-        date: '2026-11-05',
-        seats: [14, 15],
-        fare: 900,
-        passengerDetails: [
-          { name: 'Alex Johnson', gender: 'Male', age: 28, seatNumber: 14 },
-          { name: 'Sam Johnson', gender: 'Female', age: 26, seatNumber: 15 }
-        ]
-      }
-    ];
-  }
-
   cancelTrip(index: number): void {
     const trip = this.trips[index];
-    if (confirm('Are you sure you want to cancel this booking? A refund will be credited to your TedBus wallet.')) {
-      if (trip && trip._id) {
+    const authUser = this.getAuthenticatedUser();
+    if (!trip) return;
+
+    if (confirm('Are you sure you want to cancel this booking? A refund will be initiated to your source payment method.')) {
+      if (trip._id) {
         this.http.put(`${API_BASE_URL}booking/${trip._id}/cancel`, {}).subscribe({
-          next: () => console.log('Booking cancelled on server'),
-          error: (e) => console.warn('Offline cancel fallback:', e)
+          next: () => {
+            this.trips[index].status = 'cancelled';
+            localStorage.setItem('my_trips', JSON.stringify(this.trips));
+            alert('Booking cancelled successfully. Refund initiated to source payment.');
+          },
+          error: (err) => {
+            const msg = err?.error?.message || 'Unable to cancel booking.';
+            alert(msg);
+          }
         });
+      } else {
+        this.trips[index].status = 'cancelled';
+        localStorage.setItem('my_trips', JSON.stringify(this.trips));
+        alert('Booking cancelled successfully.');
       }
-      this.trips[index].status = 'cancelled';
-      localStorage.setItem('my_trips', JSON.stringify(this.trips));
-      alert('Booking cancelled successfully. Refund initiated to source payment.');
     }
   }
 

@@ -4,6 +4,7 @@ const Booking = require("../models/booking");
 const mongoose = require("mongoose");
 const fs = require("fs");
 const path = require("path");
+const { verifyAdminOnly } = require("../middleware/auth");
 
 function getFallbackRoutes() {
   try {
@@ -130,9 +131,9 @@ exports.getoneroute = async (req, res) => {
       const key = `${depName.toLowerCase()}-${arrName.toLowerCase()}`;
       const duration = durationMap[key] || 12;
 
-      const syntheticId = new mongoose.Types.ObjectId();
+      const syntheticId = `route-${key.replace(/[^a-z0-9-]/g, "")}`;
       route = {
-        _id: syntheticId.toString(),
+        _id: syntheticId,
         departureLocation: {
           name: depName,
           subLocations: getSublocations(depName)
@@ -143,20 +144,6 @@ exports.getoneroute = async (req, res) => {
         },
         duration: duration
       };
-
-      try {
-        const saved = await new Route({
-          _id: syntheticId,
-          departureLocation: route.departureLocation,
-          arrivalLocation: route.arrivalLocation,
-          duration: route.duration
-        }).save();
-        if (saved) {
-          route._id = saved._id.toString();
-        }
-      } catch (saveErr) {
-        // In-memory route is completely valid
-      }
     }
 
     let buses = [];
@@ -181,14 +168,11 @@ exports.getoneroute = async (req, res) => {
       return busRouteStr === routeIdStr;
     });
 
-    // If no buses currently attached to this route, generate 3-4 premium buses dynamically
+    // If no buses currently attached to this route, serve read-only fallback buses in memory without writing to DB
     if (!matchedbuses || matchedbuses.length === 0) {
-      const depName = route.departureLocation?.name || departure;
-      const arrName = route.arrivalLocation?.name || arrival;
-
       matchedbuses = [
         {
-          _id: new mongoose.Types.ObjectId().toString(),
+          _id: `${routeIdStr}-bus-1`,
           operatorName: "TedBus GreenLine Volvo Multi-Axle",
           busType: "Sleeper",
           departureTime: "18",
@@ -200,7 +184,7 @@ exports.getoneroute = async (req, res) => {
           reschedulable: 1
         },
         {
-          _id: new mongoose.Types.ObjectId().toString(),
+          _id: `${routeIdStr}-bus-2`,
           operatorName: "Himalayan & InterCity Express",
           busType: "A/C Seater",
           departureTime: "08",
@@ -212,7 +196,7 @@ exports.getoneroute = async (req, res) => {
           reschedulable: 0
         },
         {
-          _id: new mongoose.Types.ObjectId().toString(),
+          _id: `${routeIdStr}-bus-3`,
           operatorName: "Royal Star Luxury Sleeper",
           busType: "Sleeper",
           departureTime: "21",
@@ -224,21 +208,18 @@ exports.getoneroute = async (req, res) => {
           reschedulable: 1
         }
       ];
-
-      try {
-        await Bus.insertMany(matchedbuses.map(b => ({
-          ...b,
-          _id: new mongoose.Types.ObjectId(b._id),
-          routes: new mongoose.Types.ObjectId(routeIdStr)
-        })));
-      } catch (insertErr) {
-        // In-memory buses work smoothly
-      }
     }
 
+    const matchedBusIds = matchedbuses.map(b => String(b._id || ""));
     let bookings = [];
     try {
-      bookings = await Booking.find().lean().exec();
+      if (mongoose.connection.readyState === 1 && matchedBusIds.length > 0) {
+        bookings = await Booking.find({
+          busId: { $in: matchedBusIds },
+          "departureDetails.date": date,
+          status: { $ne: "cancelled" }
+        }).lean().exec();
+      }
     } catch (dbErr) {
       bookings = [];
     }
@@ -254,7 +235,8 @@ exports.getoneroute = async (req, res) => {
           b.departureDetails &&
           b.departureDetails.date === date &&
           b.busId &&
-          b.busId.toString() === busIdStr
+          b.busId.toString() === busIdStr &&
+          b.status !== "cancelled"
         );
       });
 
@@ -263,11 +245,6 @@ exports.getoneroute = async (req, res) => {
           currentbusseats = [...currentbusseats, ...b.seats];
         }
       });
-
-      // Sample occupied seats so the layout always looks alive and realistic
-      if (currentbusseats.length === 0) {
-        currentbusseats = [3, 7, 18, 25];
-      }
 
       busidwithseatobj[busIdStr] = currentbusseats;
     }
@@ -284,6 +261,62 @@ exports.getoneroute = async (req, res) => {
   } catch (error) {
     console.error("Error in getoneroute:", error);
     res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+/**
+ * Separate controlled initialization process to seed canonical routes and buses into MongoDB.
+ * Protected by strict administrator-only authorization; never triggered during GET requests.
+ */
+exports.initializeRoutesAndBuses = async (req, res) => {
+  try {
+    const auth = await verifyAdminOnly(req);
+    if (!auth.authorized) {
+      return res.status(auth.status).json({ error: auth.error, message: auth.message });
+    }
+
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({ error: "DatabaseUnavailable", message: "Database is offline." });
+    }
+
+    const fallbackRoutes = getFallbackRoutes();
+    const fallbackBuses = getFallbackBuses();
+    let seededRoutes = 0;
+    let seededBuses = 0;
+
+    for (const r of fallbackRoutes) {
+      if (r._id && mongoose.Types.ObjectId.isValid(r._id)) {
+        const exists = await Route.findById(r._id).lean().exec();
+        if (!exists) {
+          await Route.create({
+            _id: new mongoose.Types.ObjectId(r._id),
+            departureLocation: r.departureLocation,
+            arrivalLocation: r.arrivalLocation,
+            duration: r.duration
+          });
+          seededRoutes++;
+        }
+      }
+    }
+
+    for (const b of fallbackBuses) {
+      if (b._id && mongoose.Types.ObjectId.isValid(b._id) && b.routes && mongoose.Types.ObjectId.isValid(b.routes)) {
+        const exists = await Bus.findById(b._id).lean().exec();
+        if (!exists) {
+          await Bus.create({
+            ...b,
+            _id: new mongoose.Types.ObjectId(b._id),
+            routes: new mongoose.Types.ObjectId(b.routes)
+          });
+          seededBuses++;
+        }
+      }
+    }
+
+    res.json({ success: true, seededRoutes, seededBuses });
+  } catch (error) {
+    console.error("Error in initializeRoutesAndBuses:", error);
+    res.status(500).json({ error: "Failed to initialize routes and buses" });
   }
 };
 

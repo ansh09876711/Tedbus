@@ -13,28 +13,40 @@ export class LandingPageComponent implements OnInit, OnDestroy {
   tooption: string = '';
   date: string = '';
   activeOfferTab: string = 'all';
+  openFaqIndex: number | null = 0;
+  copiedCouponCode: string = '';
+  couponFeedbackMessage: string = '';
+  private couponFeedbackTimer: any;
+
+  readonly validPromoCodes: Record<string, string> = {
+    FIRST: 'Flat 10% OFF on your first bus booking',
+    SUPERHIT: 'Flat ₹150 OFF on AC Sleeper bookings',
+    BUS300: 'Save up to ₹300 on highway routes',
+    RBTRIP: 'Flat ₹125 OFF on return journey bookings',
+    WALLET: 'Flat ₹100 OFF instant promotional discount'
+  };
 
   stats = [
-    { icon: 'directions_bus', value: '3,000+', label: 'Bus Operators' },
-    { icon: 'alt_route', value: '1,00,000+', label: 'Routes Covered' },
-    { icon: 'star', value: '4.8 ★', label: 'App Rating' },
-    { icon: 'groups', value: '25 Lakh+', label: 'Happy Travellers' }
+    { icon: 'directions_bus', value: 'Verified', label: 'Fleet Operators' },
+    { icon: 'alt_route', value: '6+ Corridors', label: 'Major Intercity Routes' },
+    { icon: 'star', value: '4.6 / 5', label: 'Verified Journey Reviews' },
+    { icon: 'gps_fixed', value: '24/7 Live', label: 'Route & Seat Tracking' }
   ];
 
   whyUs = [
-    { icon: 'verified_user', color: 'from-red-500 to-rose-600', title: 'Verified Operators', desc: 'Every bus operator is KYC verified with safety standards checked before listing.' },
-    { icon: 'currency_rupee', color: 'from-emerald-500 to-teal-600', title: 'Best Price Guarantee', desc: 'We scan 3,000+ operators to guarantee you the lowest fare, every single time.' },
-    { icon: 'support_agent', color: 'from-blue-500 to-indigo-600', title: '24/7 Live Support', desc: 'Round-the-clock multilingual support via chat, call, or email for any issue.' },
-    { icon: 'replay', color: 'from-amber-500 to-orange-600', title: 'Instant Refunds', desc: 'Cancel anytime and get 100% automated refund directly to your source account.' }
+    { icon: 'verified_user', color: 'from-red-500 to-rose-600', title: 'Verified Operators', desc: 'Every listed coach operator meets strict safety, punctuality, and comfort standards.' },
+    { icon: 'currency_rupee', color: 'from-emerald-500 to-teal-600', title: 'Transparent Pricing', desc: 'Clear base fares with zero hidden convenience fees on seat reservations.' },
+    { icon: 'support_agent', color: 'from-blue-500 to-indigo-600', title: '24/7 Journey Support', desc: 'Bilingual traveler assistance and real-time route notifications at every step.' },
+    { icon: 'replay', color: 'from-amber-500 to-orange-600', title: 'Hassle-Free Cancellation', desc: 'Cancel eligible tickets up to 2 hours before departure with automated refund tracking.' }
   ];
 
   popularRoutes = [
-    { from: 'Delhi', to: 'Jaipur', duration: '5h 30m', price: '₹349', icon: '🏰' },
-    { from: 'Mumbai', to: 'Goa', duration: '8h', price: '₹599', icon: '🏖️' },
-    { from: 'Bangalore', to: 'Mysore', duration: '3h', price: '₹199', icon: '🏯' },
-    { from: 'Kolkata', to: 'Darjeeling', duration: '10h', price: '₹699', icon: '🏔️' },
-    { from: 'Chennai', to: 'Pondicherry', duration: '3h 30m', price: '₹249', icon: '⛵' },
-    { from: 'Delhi', to: 'Agra', duration: '4h', price: '₹299', icon: '🕌' }
+    { from: 'Delhi', to: 'Jaipur', duration: '5h 30m', price: '₹349', icon: 'location_city' },
+    { from: 'Mumbai', to: 'Goa', duration: '8h', price: '₹599', icon: 'beach_access' },
+    { from: 'Bangalore', to: 'Mysore', duration: '3h', price: '₹199', icon: 'account_balance' },
+    { from: 'Kolkata', to: 'Darjeeling', duration: '10h', price: '₹699', icon: 'landscape' },
+    { from: 'Chennai', to: 'Pondicherry', duration: '3h 30m', price: '₹249', icon: 'directions_boat' },
+    { from: 'Delhi', to: 'Agra', duration: '4h', price: '₹299', icon: 'museum' }
   ];
 
   busImages: string[] = [
@@ -57,6 +69,38 @@ export class LandingPageComponent implements OnInit, OnDestroy {
     if (this.imageInterval) {
       clearInterval(this.imageInterval);
     }
+    if (this.couponFeedbackTimer) {
+      clearTimeout(this.couponFeedbackTimer);
+    }
+  }
+
+  copyCouponCode(code: string, event?: Event): void {
+    if (event) {
+      event.stopPropagation();
+    }
+    const normalized = (code || '').trim().toUpperCase();
+    if (!normalized || !this.validPromoCodes[normalized]) {
+      this.couponFeedbackMessage = 'This promotional code is not valid or no longer supported.';
+      return;
+    }
+
+    if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(normalized).catch(() => {});
+    }
+    try {
+      localStorage.setItem('copiedPromoCode', normalized);
+    } catch {}
+
+    this.copiedCouponCode = normalized;
+    this.couponFeedbackMessage = `Code "${normalized}" copied to clipboard — ${this.validPromoCodes[normalized]}`;
+
+    if (this.couponFeedbackTimer) {
+      clearTimeout(this.couponFeedbackTimer);
+    }
+    this.couponFeedbackTimer = setTimeout(() => {
+      this.copiedCouponCode = '';
+      this.couponFeedbackMessage = '';
+    }, 3500);
   }
 
   startBackgroundSlideshow(): void {
@@ -93,6 +137,10 @@ export class LandingPageComponent implements OnInit, OnDestroy {
     const temp = this.fromoption;
     this.fromoption = this.tooption;
     this.tooption = temp;
+  }
+
+  toggleFaq(index: number): void {
+    this.openFaqIndex = this.openFaqIndex === index ? null : index;
   }
 
   bookRoute(route: any): void {

@@ -1,14 +1,23 @@
-// TedBus - MongoDB Atlas TLS diagnostic (read-only, no credentials used)
+// TedBus - MongoDB Atlas TLS diagnostic (read-only, no credentials or hardcoded hosts used)
 // Run: node test-tls.js
+require('dotenv').config({ path: __dirname + '/.env' });
 const tls = require('tls');
 const https = require('https');
 
-const HOSTS = [
-  'ac-p8eoj1e-shard-00-00.uigd8cz.mongodb.net',
-  'ac-p8eoj1e-shard-00-01.uigd8cz.mongodb.net',
-  'ac-p8eoj1e-shard-00-02.uigd8cz.mongodb.net',
-];
-const PORT = 27017;
+function getConfiguredHosts() {
+  if (process.env.ATLAS_TLS_HOSTS) {
+    return process.env.ATLAS_TLS_HOSTS.split(',').map(h => h.trim()).filter(Boolean);
+  }
+  const uri = process.env.MONGODB_URI || '';
+  const match = uri.match(/@([^/?]+)/);
+  if (match && match[1]) {
+    return match[1].split(',').map(h => h.split(':')[0].trim()).filter(Boolean);
+  }
+  return [];
+}
+
+const HOSTS = getConfiguredHosts();
+const PORT = Number(process.env.MONGODB_TLS_PORT || 27017);
 
 function envCheck() {
   console.log('=== Environment ===');
@@ -66,12 +75,16 @@ function testTls(host, family) {
   console.log('IPv4 (what Atlas Network Access must allow):', await publicIp('https://api.ipify.org'));
   console.log('IPv6 / preferred:', await publicIp('https://api64.ipify.org'));
 
-  console.log(`\n=== TLS handshake to Atlas shards on port ${PORT} ===`);
-  for (const host of HOSTS) {
+  console.log(`\n=== TLS handshake to configured database hosts on port ${PORT} ===`);
+  if (HOSTS.length === 0) {
+    console.log('No database hosts configured in environment (MONGODB_URI / ATLAS_TLS_HOSTS).');
+  }
+  for (let i = 0; i < HOSTS.length; i++) {
+    const host = HOSTS[i];
     for (const family of [4, 6]) {
       const r = await testTls(host, family);
-      console.log(`[${r.ok ? 'OK  ' : 'FAIL'}] IPv${family} ${host}\n       ${r.detail}`);
+      console.log(`[${r.ok ? 'OK  ' : 'FAIL'}] IPv${family} Host #${i + 1}\n       ${r.detail}`);
     }
   }
-  console.log('\nDone. No credentials were read or sent.');
+  console.log('\nDone. No credentials or connection strings were read or printed.');
 })();
