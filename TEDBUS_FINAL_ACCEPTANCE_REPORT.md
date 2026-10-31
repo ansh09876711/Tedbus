@@ -66,12 +66,15 @@ Every audited requirement and blocker item in this report is classified using th
 
 ---
 
-### 2.5 Production Backend URL, CORS & Health Check
+### 2.5 Production Backend URL, Vercel Serverless Readiness, CORS & Health Check
 
 | Audit Item | Final Status | Evidence & Verification |
 | :--- | :---: | :--- |
+| **Vercel Serverless MongoDB Connection Caching (`server/index.js`)** | **FIXED AND VERIFIED** | Implemented `global.__tedbusMongoCache` and `ensureDatabaseConnection()` with an Express pre-route middleware so cold-start requests await a single shared connection promise and warm invocations reuse the open connection (`maxPoolSize: 10`). |
+| **Build-Time Safety & Native DNS Preservation (`server/index.js`)** | **FIXED AND VERIFIED** | Removed top-level `process.exit(1)` during module import so Vercel's build-time route introspection never terminates prematurely. Custom DNS resolvers (`dns.setServers`) are restricted to local non-serverless development (`!IS_VERCEL && NODE_ENV !== 'production'`), preserving Vercel's native DNS resolver for Atlas SRV records. |
+| **Liveness vs. Readiness Health Check (`GET /health`)** | **FIXED AND VERIFIED** | `GET /health` in `server/index.js` reports `liveness: 'alive'` alongside `readiness: 'ready' \| 'not_ready'` and `database.ready`, returning `HTTP 200` when MongoDB is connected and `HTTP 503` when degraded. |
 | **Frontend production API URL (`frontend/src/environments/environment.prod.ts`)** | **BLOCKED BY EXTERNAL CONFIGURATION** | Retains `apiUrl: 'https://PLACEHOLDER_PRODUCTION_API_URL/'` as required until the live backend deployment hostname is provisioned. Wired via `fileReplacements` in `frontend/angular.json` (verified in Test 8). |
-| **Backend CORS & `/health` endpoint** | **FIXED AND VERIFIED** | `server/index.js` enforces `process.env.CORS_ORIGINS`, exposes `X-Data-Source` and `X-Environment`, and serves `GET /health` (`HTTP 200` when MongoDB `readyState === 1`, `HTTP 503` when disconnected). |
+| **Backend CORS & Native Vercel Express Detection** | **FIXED AND VERIFIED** | `server/index.js` exports `module.exports = app`, guards `app.listen(PORT)` with `if (require.main === module)`, and enforces `process.env.CORS_ORIGINS`. When Vercel Root Directory is `server`, Vercel natively detects `server/package.json` + `server/index.js` without requiring `server/vercel.json` rewrites. |
 
 ---
 
@@ -81,4 +84,5 @@ Every audited requirement and blocker item in this report is classified using th
 | :--- | :--- | :--- | :---: |
 | **Backend Functional & Integration Suite** | `node server/test-verification.js` | **37 / 37 PASS** (`0` failures) | **FIXED AND VERIFIED** |
 | **Adversarial Security & Authorization Suite** | `node server/test-adversarial-security.js` | **18 / 18 PASS** (`0` failures, including `ADV-17` Community JWT & `ADV-18` Review JWT/Ownership) | **FIXED AND VERIFIED** |
+| **Vercel Serverless Cold-Start & Connection Cache Test** | `node test-serverless-coldstart.js` | **PASS** (Build-time import safe, concurrent cold-start requests share 1 connection promise, liveness/readiness verified) | **FIXED AND VERIFIED** |
 | **Angular 17 Production Build** | `npm --prefix frontend run build` | **Exit Code 0** (`dist/frontend/browser`, including `sw-push.js` asset) | **FIXED AND VERIFIED** |
