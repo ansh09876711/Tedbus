@@ -6,7 +6,7 @@
  */
 export const environment = {
   production: true,
-  apiUrl: 'https://PLACEHOLDER_PRODUCTION_API_URL/',
+  apiUrl: 'https://tedbus-tau.vercel.app/',
   // Google OAuth 2.0 Web Client ID — update if using a separate OAuth app for production
   googleClientId: '516929954818-jr4ns8vssalh676heifk40dek11pjoer.apps.googleusercontent.com',
   // Map provider configuration for Interactive Route Planner
