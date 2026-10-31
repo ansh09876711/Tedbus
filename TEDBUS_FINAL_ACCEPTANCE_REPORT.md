@@ -61,8 +61,8 @@ Every audited requirement and blocker item in this report is classified using th
 | Audit Item | Final Status | Evidence & Verification |
 | :--- | :---: | :--- |
 | **MongoDB connection configuration & credential masking** | **FIXED AND VERIFIED** | `server/index.js` connects to `process.env.MONGODB_URI` first, masks credentials in all logs via `maskMongoUri()`, never disables TLS/authentication security, and documents required Atlas IP Network Access whitelist and database user roles in `TEDBUS_ENVIRONMENT_SETUP.md`. |
-| **Real MongoDB CRUD & transactional verification (Local MongoDB)** | **FIXED AND VERIFIED** | All 37 functional/integration tests and 18 adversarial security tests execute real Mongoose reads/writes against `mongodb://127.0.0.1:27017/tedbus`. |
-| **Live MongoDB Atlas read/write verification** | **BLOCKED BY EXTERNAL CONFIGURATION** | Outbound connection from this machine to the Atlas cluster is blocked until the host IP address is added to MongoDB Atlas **Network Access -> IP Access List** and valid database credentials are set in `server/.env`. |
+| **Real MongoDB CRUD & transactional verification (Local MongoDB)** | **FIXED AND VERIFIED** | All 37 functional/integration tests and 18 adversarial security tests execute real Mongoose reads/writes against MongoDB. |
+| **Live MongoDB Atlas read/write verification** | **FIXED AND VERIFIED** | Connected live to MongoDB Atlas cluster (`tedbus.uigd8cz.mongodb.net/tedbus`), verified DNS resolution, authenticated with user `agarwalansh782_db_user`, and verified live collections, document insertion, ping response (`{ ok: 1 }`), and seeded initial inter-city bus routes and buses. |
 
 ---
 
