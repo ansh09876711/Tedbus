@@ -1,11 +1,11 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, OnDestroy } from '@angular/core';
 
 @Component({
   selector: 'app-form-drawer',
   templateUrl: './form-drawer.component.html',
   styleUrl: './form-drawer.component.css'
 })
-export class FormDrawerComponent {
+export class FormDrawerComponent implements OnDestroy {
   @Input() selectedseat: number[] = [];
   @Input() seatprice: number = 0;
   @Input() routedetails: any;
@@ -18,9 +18,19 @@ export class FormDrawerComponent {
 
   toggleDrawer(): void {
     this.isDrawerOpen = !this.isDrawerOpen;
+    if (this.isDrawerOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
   }
 
   closeDrawer(): void {
     this.isDrawerOpen = false;
+    document.body.style.overflow = '';
+  }
+
+  ngOnDestroy(): void {
+    document.body.style.overflow = '';
   }
 }
