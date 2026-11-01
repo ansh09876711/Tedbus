@@ -1,13 +1,13 @@
 <!-- navbar.component.html -->
-<nav class="navbar-wrapper px-4 md:px-8 py-0 flex text-sm font-normal items-center justify-between sticky top-0 bg-white dark:bg-slate-900 z-40 border-b border-gray-100 dark:border-slate-800 transition-colors">
+<nav class="navbar-wrapper px-3 sm:px-4 md:px-8 py-0 flex text-sm font-normal items-center justify-between sticky top-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md z-40 border-b border-gray-100 dark:border-slate-800 transition-colors">
 
-  <!-- Left: Logo + Nav Links -->
-  <div class="flex gap-1 md:gap-6 items-center h-14">
+  <!-- Left: Logo + Desktop Nav Links -->
+  <div class="flex gap-1 md:gap-6 items-center h-14 md:h-16">
     <!-- Logo -->
-    <div class="cursor-pointer flex items-center gap-2.5 mr-2 md:mr-4 group" (click)="navigate('/')">
+    <div class="cursor-pointer flex items-center gap-2 mr-1 sm:mr-3 md:mr-4 group" (click)="navigate('/')">
       <!-- Bus Icon (inline SVG for crisp rendering) -->
-      <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-red-600 to-rose-700 flex items-center justify-center shadow-md group-hover:shadow-lg group-hover:scale-105 transition-all">
-        <svg width="20" height="16" viewBox="0 0 44 36" fill="none">
+      <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-br from-red-600 to-rose-700 flex items-center justify-center shadow-md group-hover:shadow-lg group-hover:scale-105 transition-all shrink-0">
+        <svg width="18" height="15" viewBox="0 0 44 36" fill="none">
           <rect x="0" y="2" width="44" height="28" rx="6" fill="white" opacity="0.95"/>
           <rect x="4" y="6" width="14" height="10" rx="2" fill="#dc2626" opacity="0.3"/>
           <rect x="26" y="6" width="14" height="10" rx="2" fill="#dc2626" opacity="0.3"/>
@@ -17,16 +17,16 @@
           <circle cx="34" cy="32" r="1.5" fill="#e5e7eb"/>
         </svg>
       </div>
-      <span class="text-xl md:text-2xl font-black tracking-tighter select-none">
+      <span class="text-lg sm:text-xl md:text-2xl font-black tracking-tighter select-none">
         <span class="text-red-600">Ted</span><span class="text-gray-900 dark:text-white">Bus</span>
       </span>
     </div>
 
     <!-- Divider -->
-    <div class="h-7 w-[1.5px] bg-gray-200 dark:bg-slate-700 hidden md:block"></div>
+    <div class="h-7 w-[1.5px] bg-gray-200 dark:bg-slate-700 hidden lg:block"></div>
 
-    <!-- Nav Links -->
-    <div class="flex gap-0.5 md:gap-1 items-center">
+    <!-- Nav Links (Desktop) -->
+    <div class="hidden md:flex gap-1 items-center">
       <!-- Bus Tickets -->
       <a (click)="navigate('/')"
          class="nav-link cursor-pointer flex items-center gap-2 px-3 md:px-4 py-2 rounded-xl group transition-all relative"
@@ -35,7 +35,7 @@
              [ngClass]="router.url === '/' ? 'bg-red-600 text-white' : 'bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-gray-400 group-hover:bg-red-100 group-hover:text-red-600'">
           <mat-icon style="font-size:16px;width:16px;height:16px;">directions_bus</mat-icon>
         </div>
-        <span class="text-xs md:text-sm font-medium hidden sm:inline">{{ 'nav.busTickets' | translate }}</span>
+        <span class="text-xs md:text-sm font-medium">{{ 'nav.busTickets' | translate }}</span>
         <!-- Active indicator -->
         <div *ngIf="router.url === '/'" class="absolute bottom-0 left-3 right-3 h-0.5 bg-red-600 rounded-full"></div>
       </a>
@@ -48,7 +48,7 @@
              [ngClass]="router.url === '/route-planner' ? 'bg-red-600 text-white' : 'bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-gray-400 group-hover:bg-red-100 group-hover:text-red-600'">
           <mat-icon style="font-size:16px;width:16px;height:16px;">alt_route</mat-icon>
         </div>
-        <span class="text-xs md:text-sm font-medium hidden sm:inline">{{ 'nav.routePlanner' | translate }}</span>
+        <span class="text-xs md:text-sm font-medium">{{ 'nav.routePlanner' | translate }}</span>
         <div *ngIf="router.url === '/route-planner'" class="absolute bottom-0 left-3 right-3 h-0.5 bg-red-600 rounded-full"></div>
       </a>
 
@@ -60,54 +60,53 @@
              [ngClass]="router.url === '/community' ? 'bg-red-600 text-white' : 'bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-gray-400 group-hover:bg-red-100 group-hover:text-red-600'">
           <mat-icon style="font-size:16px;width:16px;height:16px;">forum</mat-icon>
         </div>
-        <span class="text-xs md:text-sm font-medium hidden sm:inline">{{ 'nav.community' | translate }}</span>
+        <span class="text-xs md:text-sm font-medium">{{ 'nav.community' | translate }}</span>
         <div *ngIf="router.url === '/community'" class="absolute bottom-0 left-3 right-3 h-0.5 bg-red-600 rounded-full"></div>
       </a>
     </div>
   </div>
 
-  <!-- Right: Language, Theme, Auth -->
-  <div class="flex items-center gap-1.5 md:gap-2.5">
+  <!-- Right: Language, Theme, Auth, Mobile Menu Trigger -->
+  <div class="flex items-center gap-1 sm:gap-2">
     <!-- Language Switcher -->
     <button (click)="toggleLanguage()"
             [title]="'nav.selectLanguage' | translate"
-            class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800 hover:border-red-300 text-xs font-semibold text-gray-700 dark:text-gray-200 transition-all cursor-pointer">
-      <span class="text-base">🌐</span>
-      <span class="hidden sm:inline">{{ currentLang === 'en' ? 'हिन्दी' : 'English' }}</span>
+            class="flex items-center gap-1 px-2 py-1.5 rounded-lg border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800 text-xs font-semibold text-gray-700 dark:text-gray-200 transition-all cursor-pointer">
+      <span class="text-sm">🌐</span>
+      <span class="text-[11px] font-bold">{{ currentLang === 'en' ? 'HI' : 'EN' }}</span>
     </button>
 
     <!-- Theme Toggle -->
     <button (click)="toggleTheme()"
             [title]="'nav.toggleTheme' | translate"
             aria-label="Toggle dark/light theme"
-            class="w-9 h-9 rounded-xl flex items-center justify-center border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800 hover:border-red-300 text-gray-600 dark:text-yellow-400 transition-all cursor-pointer">
-      <mat-icon style="font-size: 18px; width: 18px; height: 18px;">{{ isDark ? 'light_mode' : 'dark_mode' }}</mat-icon>
+            class="w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800 text-gray-600 dark:text-yellow-400 transition-all cursor-pointer">
+      <mat-icon style="font-size: 16px; width: 16px; height: 16px;">{{ isDark ? 'light_mode' : 'dark_mode' }}</mat-icon>
     </button>
 
     <!-- Sign In / Account -->
     <div *ngIf="!isloggedIn">
       <button (click)="openAuthModal()"
-              class="px-4 py-2 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white font-semibold rounded-xl shadow-md hover:shadow-lg transition-all text-xs flex items-center gap-2 cursor-pointer">
-        <mat-icon style="font-size:16px;width:16px;height:16px;">person</mat-icon>
-        <span>{{ 'nav.signIn' | translate }}</span>
+              class="px-2.5 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white font-semibold rounded-lg sm:rounded-xl shadow-xs transition-all text-xs flex items-center gap-1.5 cursor-pointer">
+        <mat-icon style="font-size:15px;width:15px;height:15px;">person</mat-icon>
+        <span class="text-xs">{{ 'nav.signIn' | translate }}</span>
       </button>
     </div>
 
-    <div class="flex items-center gap-1.5" *ngIf="isloggedIn">
+    <div class="flex items-center gap-1" *ngIf="isloggedIn">
       <!-- Notifications -->
       <button (click)="navigate('/profile')" [title]="'nav.notifications' | translate"
-              class="relative w-9 h-9 rounded-xl flex items-center justify-center hover:bg-gray-50 dark:hover:bg-slate-800 border border-transparent hover:border-gray-200 dark:hover:border-slate-700 text-gray-600 dark:text-gray-300 transition-all cursor-pointer">
+              class="relative w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center hover:bg-gray-50 dark:hover:bg-slate-800 text-gray-600 dark:text-gray-300 transition-all cursor-pointer">
         <mat-icon style="font-size: 18px; width: 18px; height: 18px;">notifications_none</mat-icon>
         <span class="absolute top-1.5 right-1.5 w-2 h-2 bg-red-600 rounded-full ring-2 ring-white dark:ring-slate-900 animate-pulse"></span>
       </button>
 
       <!-- Account Dropdown -->
-      <button class="flex items-center gap-2 h-9 px-3 rounded-xl border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800 hover:border-red-300 text-gray-700 dark:text-gray-200 font-medium cursor-pointer transition-all"
+      <button class="flex items-center gap-1.5 h-8 sm:h-9 px-2 sm:px-3 rounded-lg sm:rounded-xl border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800 text-gray-700 dark:text-gray-200 font-medium cursor-pointer transition-all"
               [matMenuTriggerFor]="menu">
-        <div class="w-6 h-6 rounded-lg bg-gradient-to-br from-red-500 to-rose-600 flex items-center justify-center text-white text-xs font-bold shadow-sm">
+        <div class="w-6 h-6 rounded-md bg-gradient-to-br from-red-500 to-rose-600 flex items-center justify-center text-white text-xs font-bold shadow-xs">
           {{ userInitial }}
         </div>
-        <span class="hidden sm:inline text-xs">{{ userDisplayName || ('nav.account' | translate) }}</span>
         <mat-icon class="text-gray-400 dark:text-gray-500" style="font-size:16px;width:16px;height:16px;">expand_more</mat-icon>
       </button>
 
@@ -137,6 +136,37 @@
     </div>
   </div>
 </nav>
+
+<!-- Mobile Bottom Navigation Bar (app-like experience on phones) -->
+<div class="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-lg border-t border-gray-200 dark:border-slate-800 z-40 px-3 py-1 flex items-center justify-around shadow-lg">
+  <button (click)="navigate('/')"
+          class="flex flex-col items-center py-1 px-3 rounded-lg transition-colors"
+          [ngClass]="router.url === '/' ? 'text-red-600 dark:text-red-400 font-bold' : 'text-gray-500 dark:text-gray-400'">
+    <mat-icon style="font-size:20px;width:20px;height:20px;">directions_bus</mat-icon>
+    <span class="text-[10px] mt-0.5">{{ 'nav.busTickets' | translate }}</span>
+  </button>
+
+  <button (click)="navigate('/route-planner')"
+          class="flex flex-col items-center py-1 px-3 rounded-lg transition-colors"
+          [ngClass]="router.url === '/route-planner' ? 'text-red-600 dark:text-red-400 font-bold' : 'text-gray-500 dark:text-gray-400'">
+    <mat-icon style="font-size:20px;width:20px;height:20px;">alt_route</mat-icon>
+    <span class="text-[10px] mt-0.5">{{ 'nav.routePlanner' | translate }}</span>
+  </button>
+
+  <button (click)="navigate('/community')"
+          class="flex flex-col items-center py-1 px-3 rounded-lg transition-colors"
+          [ngClass]="router.url === '/community' ? 'text-red-600 dark:text-red-400 font-bold' : 'text-gray-500 dark:text-gray-400'">
+    <mat-icon style="font-size:20px;width:20px;height:20px;">forum</mat-icon>
+    <span class="text-[10px] mt-0.5">{{ 'nav.community' | translate }}</span>
+  </button>
+
+  <button (click)="isloggedIn ? navigate('/profile') : openAuthModal()"
+          class="flex flex-col items-center py-1 px-3 rounded-lg transition-colors"
+          [ngClass]="router.url === '/profile' ? 'text-red-600 dark:text-red-400 font-bold' : 'text-gray-500 dark:text-gray-400'">
+    <mat-icon style="font-size:20px;width:20px;height:20px;">person</mat-icon>
+    <span class="text-[10px] mt-0.5">{{ isloggedIn ? ('nav.account' | translate) : ('nav.signIn' | translate) }}</span>
+  </button>
+</div>
 
 <!-- Clean, User-Friendly Sign In Modal -->
 <div *ngIf="showAuthModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
